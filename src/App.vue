@@ -422,6 +422,7 @@ export default {
         // show codes
         if ($(".inputPrecode").length == 0) {
           $(".question-controls-container input").each(function() {
+            debugger;
             if (
               $(this).hasClass("mrSingle") ||
               $(this).hasClass("mrMultiple")
@@ -738,6 +739,68 @@ export default {
                 }
                 $(this).addClass("questionReadyForSubmit");
                 //AutoAnswer(".question-container");
+              } else if ($(this).hasClass("CategoricalButtons")) {
+                $(this)
+                  .find(".mrMultiple")
+                  .prop("checked", false);
+                $(".btn-checked").removeClass("btn-checked");
+                var availableOptions = $(this).find(".mrMultiple").length;
+                var howManyOptions = Math.floor(
+                  Math.random() * availableOptions + 1
+                );
+                var clickOption;
+                for (var i = 0; i < howManyOptions; i++) {
+                  var clickOption = Math.floor(
+                    Math.random() * availableOptions
+                  );
+                  clickOption = clickOption == 0 ? 0 : clickOption;
+                  $(this)
+                    .find(".label-with-mrMultiple:eq(" + clickOption + ")")
+                    .click();
+
+                  //if Other(Specify)
+                  if (
+                    $(this)
+                      .find(".mrMultiple:eq(" + clickOption + ")")
+                      .closest(".answer-container")
+                      .find(".mrEdit").length > 0
+                  ) {
+                    if (
+                      $(this)
+                        .find(".mrMultiple:eq(" + clickOption + ")")
+                        .is(":checked")
+                    ) {
+                      $(this)
+                        .find(".mrMultiple:eq(" + clickOption + ")")
+                        .closest(".answer-container")
+                        .find(".mrEdit")
+                        .val(
+                          $(this)
+                            .find(".mrMultiple:eq(" + clickOption + ")")
+                            .closest(".answer-container")
+                            .find(".mrMultipleText")
+                            .text()
+                            .slice(
+                              0,
+                              $(this)
+                                .find(".mrMultiple:eq(" + clickOption + ")")
+                                .closest(".answer-container")
+                                .find(".mrEdit")
+                                .attr("maxlength")
+                            )
+                        )
+                        .trigger("blur");
+                    } else {
+                      $(this)
+                        .find(".mrMultiple:eq(" + clickOption + ")")
+                        .closest(".answer-container")
+                        .find(".mrEdit")
+                        .val("")
+                        .trigger("blur");
+                    }
+                  }
+                }
+                $(this).addClass("questionReadyForSubmit");
               } else {
                 $(this)
                   .find(".mrMultiple")
@@ -761,6 +824,10 @@ export default {
                   $(this)
                     .find(".mrMultiple:eq(" + clickOption + ")")
                     .click();
+                  $(this)
+                    .find(".label-with-mrMultiple:eq(" + clickOption + ")")
+                    .click();
+                  //.prop("checked", true);
                   //if Other(Specify)
                   if (
                     $(this)

@@ -34,8 +34,8 @@ npm run lint
 
 See [Configuration Reference](https://cli.vuejs.org/config/).
 
-https://media.ipsosinteractive.com/
+/applications/SurveyShortcuts/
 
-http://localhost:8080/
+https://staging01.ipsosinteractive.com/surveys/?pid=S2019785&id=&idtype=test
 
-https://staging01.ipsosinteractive.com/surveys/?pid=S2019716
+

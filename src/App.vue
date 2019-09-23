@@ -120,18 +120,32 @@ export default {
         { icon: "fa-sort-alpha-down", srt: "desc" },
         { icon: "fa-file-export", srt: "file" }
       ],
-      ActiveSort: "file"
+      ActiveSort: "file",
+      currQName: null,
+      curQIndex: null
     };
   },
-  created() {
+  mounted() {
+    //check if ESQ page
+    this.currQName = $("input[name='I.SavePoint']").val();
+
     // check if module should be activated
     if (sessionStorage == undefined) {
       console.log("no session storage");
       this.activateModule = false;
+      if (this.currQName == "skipped_questions") {
+        window.everythingReady = function() {
+          $(".mrNext").click();
+        };
+      }
       return false;
     }
-    //check if ESQ page
-    if ($("input[name='I.SavePoint']").val() == "skipped_questions") {
+    let ESQq = sessionStorage.getItem("ESQ_selQ");
+    if (ESQq) {
+      this.SelViewQ = JSON.parse(ESQq);
+    }
+
+    if (this.currQName == "skipped_questions") {
       this.runESQSetup();
     } else {
       //run setup for normal pages
@@ -141,81 +155,116 @@ export default {
   methods: {
     runESQSetup() {
       console.log("ESQ setup");
-      this.SelViewQ = JSON.parse(this.getStorage("ESQ_selQ"));
+
+      //make selections
+
       if (Array.isArray(this.SelViewQ)) {
         let vueObj = this;
 
         // setTimeout(function() {
         window.everythingReady = function() {
+          //update previewQ
+          let qString = "",
+            qStArr;
+          $(".mrEdit").each(function() {
+            qString += $(this).val() + ",";
+          });
+
+          console.log(qString);
+
+          qStArr = qString.split(",");
+          qStArr.pop();
+          sessionStorage.setItem("ESQ_qString", JSON.stringify(qStArr));
+
           vueObj.SelViewQ.forEach(qName => {
             $(".mrEdit[value='" + qName + "']")
               .closest("tr")
               .find("input[id*='_Q1_C0']")
               .prop("checked", true);
           });
-          $("body").trigger("fakeReady");
+          // $("body").trigger("fakeReady");
+          $(".mrNext").click();
         };
         // }, 10);
       }
+      //reset submited Q
+      sessionStorage.setItem("ESQ_submQ", "[]");
     },
     runNormalSetup() {
       console.log("normal setup");
       let vueObj = this;
       //set seen questions
 
-      let seenQ = sessionStorage.getItem("ESQ_SeenQ");
+      let seenQ = sessionStorage.getItem("ESQ_toSubm");
 
       if (seenQ) {
         vueObj.QSeenArr = JSON.parse(seenQ);
       }
-      let currQName = $("input[name='I.SavePoint']").val();
-      let curQIndex = vueObj.QSeenArr.indexOf(currQName);
-      let ESQq = sessionStorage.getItem("ESQ_selQ");
+
       let inESQq = false;
-      if (ESQq) {
-        inESQq = JSON.parse(ESQq).indexOf(currQName) > -1;
-      }
+      inESQq = this.SelViewQ.indexOf(this.currQName) > -1;
+
+      let curQIndex = vueObj.QSeenArr.indexOf(this.currQName);
       console.log("inESQq:", inESQq);
       console.log("curQIndex:", curQIndex);
       if (curQIndex == -1 && !inESQq) {
-        $("#mrForm").submit(function() {
-          vueObj.QSeenArr.push(currQName);
-          sessionStorage.setItem("ESQ_SeenQ", JSON.stringify(vueObj.QSeenArr));
-        });
+        // $("#mrForm").submit(function() {
+        //   vueObj.QSeenArr.push(this.currQName);
+        //   sessionStorage.setItem("ESQ_toSubm", JSON.stringify(vueObj.QSeenArr));
+        // });
+        //bind events
+
+        setTimeout(function() {
+          $(".mrNext").click(function() {
+            console.log("clicked");
+            vueObj.QSeenArr.push(vueObj.currQName);
+            sessionStorage.setItem(
+              "ESQ_toSubm",
+              JSON.stringify(vueObj.QSeenArr)
+            );
+          });
+        }, 300);
       } else {
-        let submitedQ = JSON.parse(sessionStorage.getItem("ESQ_submQ"));
-        let inSubmQ = false;
+        let submitedQ = sessionStorage.getItem("ESQ_submQ");
+        let submQArr;
+
         if (submitedQ) {
-          inSubmQ = submitedQ.indexOf(currQName) > -1;
+          submQArr = JSON.parse(submitedQ);
+        } else {
+          submQArr = [];
         }
-        {
-          submitedQ = [];
-        }
+
+        let inSubmQ = submQArr.indexOf(this.currQName) > -1;
+
         console.log("inSubmQ:", inSubmQ);
+
         if (inSubmQ) {
           // remove from seen
           vueObj.QSeenArr.splice(curQIndex, 1);
-          sessionStorage.setItem("ESQ_SeenQ", JSON.stringify(vueObj.QSeenArr));
+          sessionStorage.setItem("ESQ_toSubm", JSON.stringify(vueObj.QSeenArr));
         } else if (!inESQq) {
-          submitedQ.push(currQName);
-          sessionStorage.setItem("ESQ_submQ", JSON.stringify(submitedQ));
+          submQArr.push(this.currQName);
+
+          sessionStorage.setItem("ESQ_submQ", JSON.stringify(submQArr));
           window.everythingReady = function() {
             console.log("Do submit");
             $(".mrNext").click();
-            // $('body').trigger('fakeReady');
-            return false;
           };
+          return false;
         }
       }
 
       this.activateModule = true;
+      let qString = this.getStorage("ESQ_qString");
 
-      let qString =
-        '["HCAL_Region1_Code_CA","Q26_newOE","Q4","Q4_MA","CrossDeviceGridSlider","GridSliderCloseness","HHCMP10","CAEDU2","USMAR2","USHHI3","EMP01","QDINK","QS1","QP1","QP1info","KIDAGE","KIDGEN","Q1","Q2","Q3","Q3A","Q3B","Q4a","Q4b","Q5","Q6_intro","Q7","Q8","Q9","Q10New","Q11","Q12","Q14","Q15","Q16","Q19_intro","Q20","Q20A","Q21","Q23","Q24","Q24A","Q25"]';
-      this.updateStorage("ESQ_qString", qString);
-      this.OrigViewQuestions = JSON.parse(qString);
-      this.ViewQuestions = JSON.parse(qString);
-
+      if (qString) {
+        this.OrigViewQuestions = JSON.parse(qString);
+        this.ViewQuestions = JSON.parse(qString);
+      }
+      let SelQstring = sessionStorage.getItem("ESQ_selQ");
+      if (SelQstring) {
+        this.SelViewQ = JSON.parse(SelQstring);
+      }
       // this.ViewQuestions.sort();
       this.showDrawer = this.getStorage("ESQ_showDrawer") == "true";
       var isAlt, isCtrl, isSft;
@@ -299,6 +348,7 @@ export default {
       } else {
         this.SelViewQ.push(Qname);
       }
+      sessionStorage.setItem("ESQ_selQ", JSON.stringify(this.SelViewQ));
     },
     closeModal() {
       this.showModal = false;
@@ -1469,6 +1519,7 @@ export default {
       // }
     },
     navigate(to) {
+      console.log("nav", to);
       $(to).click();
     },
     updateStorage(key, val) {
@@ -1632,6 +1683,9 @@ export default {
   opacity: 0.8;
   font-size: 18px;
   margin-right: 5px;
+  position: absolute;
+  top: -35px;
+  right: -2px;
 }
 #fakeContent {
   width: 100%;

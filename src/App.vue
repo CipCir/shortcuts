@@ -4,6 +4,14 @@
       <div id="slideBtn" class="clickable" @click="slideClick()" v-html="slideBtns[slideBtnIndx]"></div>
       <div id="fakeContent" v-if="!showDrawer"></div>
       <div id="drawerContent" :class="showDrawer?'slideUP':'slideDown'">
+        <div id="listCont" v-if="showDevices">
+          <div class="deviceItm">Mobile Portrait</div>
+          <div class="deviceItm">Mobile Landscape</div>
+        </div>
+        <div class="actBtn" @click="showDevices=!showDevices">
+          <i class="fa-sort-alpha-up"></i>
+          <span class="bntLabel">device</span>
+        </div>
         <div
           v-for="(btn,indx) in actionBtns"
           :key="indx"
@@ -49,22 +57,15 @@
             >Please find below a list all available question names, click to select/deselect the questions you wish to preview</div>
           </center>
           <div id="CtrlCont">
-            <span>Sort:</span>
-            <span
-              class="SortCont"
-              :class="{activeSort:butn.srt==ActiveSort}"
-              v-for="butn in sortBtns"
-              :key="butn.icon"
-              @click="DoSortBtn(butn.srt)"
-            >
-              <i class="fas" :class="butn.icon"></i>
-            </span>
+            Filter questions:
+            <input type="text" v-model="ViewQFilter" />
+            <i id="clearField" class="far fa-times-circle" @click="ViewQFilter=''"></i>
           </div>
           <div id="QBtnCont">
             <div
               class="qContainer"
               :class="{'selectedQ':SelViewQ.indexOf(qName)>-1}"
-              v-for="(qName,indx) in ViewQuestions"
+              v-for="(qName,indx) in filViewQuestions"
               :key="indx"
               @click="AddQ(qName)"
             >
@@ -95,24 +96,29 @@ export default {
       showBtns: false,
       showModal: false,
       slideBtnIndx: 0,
+      showDevices: false,
       slideBtns: [
         '<i class="far fa-caret-square-up"></i>',
         '<i class="far fa-caret-square-down"></i>'
       ],
       actionBtns: [
-        {
-          lbl: "Previous page",
-          icon: "fas fa-step-backward",
-          action: "navPrev"
-        },
+        // {
+        //   lbl: "Previous page",
+        //   icon: "fas fa-step-backward",
+        //   action: "navPrev"
+        // },
         { lbl: "Question preview", icon: "far fa-eye", action: "preview" },
         { lbl: "Show/hide precodes", icon: "fas fa-code", action: "codes" },
         { lbl: "Random data", icon: "fas fa-random", action: "randomData" },
         { lbl: "Next page", icon: "fas fa-step-forward", action: "navNext" }
       ],
+      deviceBtns: [
+        { lbl: "Mobile Portrait", icon: "far fa-eye", action: "mobPortrait" },
+        { lbl: "Mobile Landscape", icon: "far fa-eye", action: "mobLandscape" }
+      ],
       CodesAreShowed: true,
       ViewQuestions: [],
-      OrigViewQuestions: [],
+      ViewQFilter: "",
       QSeenArr: [],
       SelViewQ: [],
       sortBtns: [
@@ -157,7 +163,6 @@ export default {
       console.log("ESQ setup");
 
       //make selections
-
       if (Array.isArray(this.SelViewQ)) {
         let vueObj = this;
 
@@ -256,9 +261,9 @@ export default {
 
       this.activateModule = true;
       let qString = this.getStorage("ESQ_qString");
-
+      qString =
+        '["T_Q4","T_Q1","T_Q2","SAQwPictureZoom","SAQExpandable","SAQwClickImagesWOB","SAQwVolumeControlwFontSize","SAQwButtons","MACategoricalButtons","OEQwPrePostLabe","GOEQNumericRowColumnSum","SliderQHorizontal","SliderCloseness","SVGSlider"]';
       if (qString) {
-        this.OrigViewQuestions = JSON.parse(qString);
         this.ViewQuestions = JSON.parse(qString);
       }
       let SelQstring = sessionStorage.getItem("ESQ_selQ");
@@ -320,20 +325,6 @@ export default {
           vueObj.navigate(".mrPrev");
         }
       });
-    },
-    DoSortBtn(sortT) {
-      this.ActiveSort = sortT;
-      switch (sortT) {
-        case "asc":
-          this.ViewQuestions.sort();
-          break;
-        case "desc":
-          this.ViewQuestions.reverse();
-          break;
-        case "file":
-          this.ViewQuestions = JSON.parse(this.getStorage("ESQ_qString"));
-          break;
-      }
     },
     GotoPreviewQ() {
       this.updateStorage("ESQ_selQ", JSON.stringify(this.SelViewQ));
@@ -1603,6 +1594,18 @@ export default {
         return sessionStorage.getItem(key);
       }
     }
+  },
+  computed: {
+    filViewQuestions() {
+      let matchString = this.ViewQFilter.toLowerCase();
+      if (matchString != "") {
+        return this.ViewQuestions.filter(itm => {
+          return itm.toLowerCase().includes(matchString);
+        });
+      } else {
+        return this.ViewQuestions;
+      }
+    }
   }
 };
 </script>
@@ -1862,17 +1865,27 @@ export default {
 }
 #instr {
   font-size: large;
-
   margin-top: 25px;
   font-weight: bold;
   width: 75%;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 #CtrlCont {
   padding: 5px;
   font-size: large;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
+  margin-bottom: 5px;
+  background: #e4f1f0;
+  padding: 5px;
+}
+#CtrlCont > input {
+  margin-left: 5px;
+}
+#clearField {
+  margin-left: 5px;
+  cursor: pointer;
+  color: #dc1616;
 }
 .SortCont {
   margin: 0 10px;
@@ -1927,6 +1940,20 @@ export default {
   padding-top: unset !important;
   font-size: 30px;
   color: #666 !important;
+}
+#listCont {
+  bottom: 61px;
+  left: 27%;
+  background: lightblue;
+  color: black;
+  position: fixed;
+}
+.deviceItm {
+  padding: 3px;
+  cursor: pointer;
+}
+.deviceItm:hover {
+  background: lightgrey;
 }
 /* mobile look */
 @media only screen and (max-width: 768px) {

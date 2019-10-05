@@ -1,14 +1,21 @@
 <template>
   <div id="app" v-if="activateModule">
-    <div id="drawer" v-if="newLook">
+    <div id="drawer">
       <div id="slideBtn" class="clickable" @click="slideClick()" v-html="slideBtns[slideBtnIndx]"></div>
       <div id="fakeContent" v-if="!showDrawer"></div>
       <div id="drawerContent" :class="showDrawer?'slideUP':'slideDown'">
         <div id="listCont" v-if="showDevices">
-          <div class="deviceItm">Mobile Portrait</div>
-          <div class="deviceItm">Mobile Landscape</div>
+          <div
+            class="deviceItm"
+            v-for="(device,index) in deviceBtns"
+            :key="index"
+            @click="SetDeviceLayout(device)"
+          >
+            <i :class="[device.icon,{'landSk':device.landSc},device.color]"></i>
+            <span class="devList">{{device.lbl}}</span>
+          </div>
         </div>
-        <div class="actBtn" @click="showDevices=!showDevices">
+        <div id="deviceBtn" class="actBtn" @click="openDevices()">
           <i class="fa-sort-alpha-up"></i>
           <span class="bntLabel">device</span>
         </div>
@@ -26,23 +33,7 @@
         </div>
       </div>
     </div>
-    <div v-else id="shortcutscontainer">
-      <div class="buttonsdiv" :class="{'showbuttons':showBtns}">
-        <div class="buttons" id="ESQModal" @click="ShowESQModal()">[G]</div>
-        <div class="buttons" id="showPre" @click="showCodes()">[S]</div>
-        <div class="buttons" id="nextPage" @click="navigate('.mrNext')">[D]</div>
-        <div class="buttons" id="prevPage" @click="navigate('.mrPrev')">[B]</div>
-        <div class="buttons" id="randomData" @click="setRandomData()">[R]</div>
-        <div class="buttons" id="autoanswerS">[A]</div>
-      </div>
-      <div class="shortcuts showKeys" @click="openInfoPopup()">
-        <svg viewBox="0 0 20 20">
-          <path
-            d="M0 6c0-1.1.9-2 2-2h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6zm2 0v2h2V6H2zm1 3v2h2V9H3zm-1 3v2h2v-2H2zm3 0v2h10v-2H5zm11 0v2h2v-2h-2zM6 9v2h2V9H6zm3 0v2h2V9H9zm3 0v2h2V9h-2zm3 0v2h2V9h-2zM5 6v2h2V6H5zm3 0v2h2V6H8zm3 0v2h2V6h-2zm3 0v2h4V6h-4z"
-          />
-        </svg>
-      </div>
-    </div>
+
     <div v-if="showModal" id="vueModBackCont" @click.self="closeModal()">
       <div id="vueModMainCont">
         <div id="vueModHeader">
@@ -90,7 +81,6 @@ export default {
   // }
   data() {
     return {
-      newLook,
       activateModule: false,
       showDrawer: false,
       showBtns: false,
@@ -113,8 +103,38 @@ export default {
         { lbl: "Next page", icon: "fas fa-step-forward", action: "navNext" }
       ],
       deviceBtns: [
-        { lbl: "Mobile Portrait", icon: "far fa-eye", action: "mobPortrait" },
-        { lbl: "Mobile Landscape", icon: "far fa-eye", action: "mobLandscape" }
+        {
+          lbl: "Mobile Portrait",
+          icon: "fas fa-mobile-alt",
+          action: "mobPortrait",
+          color: "MobCol"
+        },
+        {
+          lbl: "Mobile Landscape",
+          icon: "fas fa-mobile-alt",
+          action: "mobLandscape",
+          color: "MobCol",
+          landSc: true
+        },
+        {
+          lbl: "Tablet Portrait",
+          icon: "fas fa-tablet-alt",
+          color: "TablCol",
+          action: "TabPortrait"
+        },
+        {
+          lbl: "Tablet Landscape",
+          icon: "fas fa-tablet-alt",
+          action: "TabLandscape",
+          color: "TablCol",
+          landSc: true
+        },
+        {
+          lbl: "Desktop",
+          icon: "fas fa-desktop",
+          color: "DeskCol",
+          action: "mobPortrait"
+        }
       ],
       CodesAreShowed: true,
       ViewQuestions: [],
@@ -159,6 +179,34 @@ export default {
     }
   },
   methods: {
+    SetDeviceLayout(device) {
+      let scWidth = "*,1",
+        scHeight = "";
+      switch (device.action) {
+        case "mobPortrait":
+          scWidth = "500px,*";
+          scHeight = "300px,*";
+          break;
+        case "mobLandscape":
+          scWidth = "300px,*";
+          scHeight = "500px,*";
+          break;
+      }
+      parent.document.getElementsByTagName("frameset")[0].rows = scWidth;
+      parent.document.getElementsByTagName("frameset")[0].cols = scHeight;
+
+      parent.document
+        .getElementById("mainFrame")
+        .setAttribute("style", "border:1px solid blue");
+    },
+    openDevices() {
+      this.showDevices = !this.showDevices;
+      setTimeout(function() {
+        $("#listCont")
+          .css("left", $(".actBtn:first").position().left)
+          .show();
+      }, 1);
+    },
     runESQSetup() {
       console.log("ESQ setup");
 
@@ -1943,22 +1991,44 @@ export default {
 }
 #listCont {
   bottom: 61px;
-  left: 27%;
-  background: lightblue;
   color: black;
   position: fixed;
+  display: none;
 }
 .deviceItm {
-  padding: 3px;
+  background: lightblue;
+  padding: 5px;
   cursor: pointer;
+  text-align: left;
+  border-bottom: solid 1px white;
+  border-radius: 5px;
 }
 .deviceItm:hover {
-  background: lightgrey;
+  background: lightseagreen;
+}
+.devList {
+  margin-left: 5px;
+}
+.landSk {
+  transform: rotate(270deg);
+}
+.MobCol {
+  color: #1b364e;
+}
+.TablCol {
+  color: #db6060;
+}
+.DeskCol {
+  color: #475283;
 }
 /* mobile look */
 @media only screen and (max-width: 768px) {
   .bntLabel {
     display: none;
+  }
+  #deviceBtn,
+  #listCont {
+    display: none !important;
   }
 }
 </style>

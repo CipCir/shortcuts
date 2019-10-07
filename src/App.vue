@@ -7,6 +7,7 @@
         <div id="listCont" v-if="showDevices">
           <div
             class="deviceItm"
+            :class="{'selDevice':device.lbl==SelDeviceBtn.lbl}"
             v-for="(device,index) in deviceBtns"
             :key="index"
             @click="SetDeviceLayout(device)"
@@ -16,7 +17,7 @@
           </div>
         </div>
         <div id="deviceBtn" class="actBtn" @click="openDevices()">
-          <i class="fa-sort-alpha-up"></i>
+          <i class="fas fa-chalkboard-teacher"></i>
           <span class="bntLabel">device</span>
         </div>
         <div
@@ -30,6 +31,43 @@
         </div>
         <div id="helpBtn" @click="DoBtnAction('openInfo')">
           <i class="fas fa-info-circle"></i>
+        </div>
+      </div>
+    </div>
+    <div v-if="addIframe">
+      <div id="iframeContainer" @click.self="addIframe=false">
+        <div id="FrameDimControls">
+          <!-- <input type="text" id="iWidht"  /> -->
+          <div
+            class="deviceItmFrame"
+            :class="{'selDevice':device.lbl==SelDeviceBtn.lbl}"
+            v-for="(device,index) in deviceBtns"
+            :key="index"
+            @click="SetDeviceLayout(device)"
+          >
+            <i :class="[device.icon,{'landSk':device.landSc},device.color]"></i>
+          </div>
+          <div class="ctrlZone">
+            <span>Width:</span>
+            <input type="range" class="FrameSlider" v-model="iFrame_Width" min="400" max="1024" />
+            {{iFrame_Width}}
+            <span class="dimLbl">px</span>
+          </div>
+          <div class="ctrlZone">
+            <span>Height:</span>
+            <input type="range" class="FrameSlider" v-model="iFrame_Height" min="400" max="1024" />
+            {{iFrame_Height}}
+            <span class="dimLbl">px</span>
+          </div>
+        </div>
+        <iframe
+          src="https://media.ipsosinteractive.com/applications/SurveyShortcuts/FishTemplate.html"
+          frameborder="0"
+          id="ESQFrame"
+          :style="'overflow:hidden;height:' + iFrame_Height +'px;width:' + iFrame_Width+'px;'"
+        />
+        <div id="CloseFrame" @click="addIframe=false">
+          <i class="far fa-window-close"></i>
         </div>
       </div>
     </div>
@@ -82,6 +120,9 @@ export default {
   data() {
     return {
       activateModule: false,
+      addIframe: false,
+      iFrame_Width: 411,
+      iFrame_Height: 731,
       showDrawer: false,
       showBtns: false,
       showModal: false,
@@ -107,35 +148,44 @@ export default {
           lbl: "Mobile Portrait",
           icon: "fas fa-mobile-alt",
           action: "mobPortrait",
-          color: "MobCol"
+          color: "MobCol",
+          width: 360,
+          height: 640
         },
         {
           lbl: "Mobile Landscape",
           icon: "fas fa-mobile-alt",
           action: "mobLandscape",
           color: "MobCol",
+          width: 640,
+          height: 360,
           landSc: true
         },
         {
           lbl: "Tablet Portrait",
           icon: "fas fa-tablet-alt",
           color: "TablCol",
-          action: "TabPortrait"
+          action: "TabPortrait",
+          width: 768,
+          height: 1024
         },
         {
           lbl: "Tablet Landscape",
           icon: "fas fa-tablet-alt",
           action: "TabLandscape",
           color: "TablCol",
-          landSc: true
-        },
-        {
-          lbl: "Desktop",
-          icon: "fas fa-desktop",
-          color: "DeskCol",
-          action: "mobPortrait"
+          landSc: true,
+          width: 1024,
+          height: 768
         }
+        // {
+        //   lbl: "Desktop",
+        //   icon: "fas fa-desktop",
+        //   color: "DeskCol",
+        //   action: "mobPortrait"
+        // }
       ],
+      SelDeviceBtn: { lbl: "" },
       CodesAreShowed: true,
       ViewQuestions: [],
       ViewQFilter: "",
@@ -150,6 +200,9 @@ export default {
       currQName: null,
       curQIndex: null
     };
+  },
+  created() {
+    window.DimWrapper = $("#wrapper").clone();
   },
   mounted() {
     //check if ESQ page
@@ -179,25 +232,17 @@ export default {
     }
   },
   methods: {
+    SetFrameDim(device) {
+      this.iFrame_Width = device.width;
+      this.iFrame_Height = device.height;
+      this.SelDeviceBtn = device;
+    },
     SetDeviceLayout(device) {
-      let scWidth = "*,1",
-        scHeight = "";
-      switch (device.action) {
-        case "mobPortrait":
-          scWidth = "500px,*";
-          scHeight = "300px,*";
-          break;
-        case "mobLandscape":
-          scWidth = "300px,*";
-          scHeight = "500px,*";
-          break;
-      }
-      parent.document.getElementsByTagName("frameset")[0].rows = scWidth;
-      parent.document.getElementsByTagName("frameset")[0].cols = scHeight;
-
-      parent.document
-        .getElementById("mainFrame")
-        .setAttribute("style", "border:1px solid blue");
+      this.addIframe = true;
+      this.showDevices = false;
+      this.iFrame_Width = device.width;
+      this.iFrame_Height = device.height;
+      this.SelDeviceBtn = device;
     },
     openDevices() {
       this.showDevices = !this.showDevices;
@@ -1658,6 +1703,83 @@ export default {
 };
 </script>
 <style>
+#iframeContainer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100vh;
+  background: #a5a5a5;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  flex-direction: column;
+  z-index: 999999;
+}
+
+.FrameSlider {
+  -webkit-appearance: none;
+  width: 170px !important;
+  height: 15px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  margin: 0 5px;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
+}
+
+.FrameSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4caf50;
+  cursor: pointer;
+}
+
+.FrameSlider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4caf50;
+  cursor: pointer;
+}
+#CloseFrame {
+  position: fixed;
+  top: 0;
+  right: 20px;
+  color: #f1d342;
+  font-size: x-large;
+  cursor: pointer;
+}
+#CloseFrame:hover {
+  color: #faea9c;
+}
+#FrameDimControls {
+  background: ghostwhite;
+  width: 70%;
+  margin-bottom: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 8px 17px 2px rgba(0, 0, 0, 0.14),
+    0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.2);
+}
+#FrameDimControls > input {
+  margin: 0 5px;
+}
+.ctrlZone {
+  margin: 0 5px;
+  width: 45%;
+  display: flex;
+  justify-content: center;
+}
 .showbuttons {
   display: flex !important;
   justify-content: flex-end;
@@ -1995,7 +2117,8 @@ export default {
   position: fixed;
   display: none;
 }
-.deviceItm {
+.deviceItm,
+.deviceItmFrame {
   background: lightblue;
   padding: 5px;
   cursor: pointer;
@@ -2003,9 +2126,14 @@ export default {
   border-bottom: solid 1px white;
   border-radius: 5px;
 }
-.deviceItm:hover {
+.deviceItm:hover,
+.deviceItmFrame:hover {
   background: lightseagreen;
 }
+.deviceItmFrame {
+  margin: 0 3px;
+}
+
 .devList {
   margin-left: 5px;
 }
@@ -2020,6 +2148,9 @@ export default {
 }
 .DeskCol {
   color: #475283;
+}
+.selDevice {
+  background: white;
 }
 /* mobile look */
 @media only screen and (max-width: 768px) {

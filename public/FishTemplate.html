@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en-GB">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="Content-Language" content="en-GB" />
+    <meta http-equiv="Expires" content="-1" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta name="Robots" content="noindex, nofollow" />
+    <meta
+      name="Generator"
+      content="Interviewer Server HTML Player 1.0.23..312"
+    />
+    <meta name="Template" content="VisualAssets/iis-fish/iis-fish.htm" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Research</title>
+    <script>
+      document.domain = (function() {
+        var pattern =
+          "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
+        if (window.location.hostname.toString().match(new RegExp(pattern))) {
+          return window.location.hostname;
+        } else {
+          return window.location.hostname.substr(
+            window.location.hostname.indexOf(".") + 1
+          );
+        }
+      })();
+      window.location.origin =
+        window.location.origin ||
+        (function() {
+          var host, proto, port;
+          proto = window.location.protocol;
+          host = window.location.hostname;
+          port = window.location.port ? ":" + window.location.port : "";
+
+          return proto + "//" + host + port;
+        })();
+    </script>
+    <div></div>
+    <span class="mrBannerText">
+      <link
+        href="https://cdn.ipsosinteractive.com/deploy/templates/iis-sharky/v3.0-unm/css/style.css"
+        rel="stylesheet"
+        type="text/css"
+      />
+      <script
+        type="text/javascript"
+        src="https://cdn.ipsosinteractive.com/deploy/templates/iis-sharky/v3.0-unm/js/jq-1.11.0.and.migrate-1.2.1.min.js"
+      ></script>
+    </span>
+    <!--[if lt IE 9]>
+      <script src="https://cdn.ipsosinteractive.com/deploy/templates/iis-sharky/v1.0/js/respond.min.js"></script>
+    <![endif]-->
+    <div></div>
+    <span class="mrBannerText"></span>
+  </head>
+
+  <body
+    onload="noBack();"
+    onpageshow="if (event.persisted) noBack();"
+    onunload=""
+    class="progress-bar-minimal no-touch direction-ltr everythingReady"
+  >
+    <span class="mrBannerText">
+      <script id="StudyJSONProperties" class="StudyJSONProperties">
+        $("body").data("studyJSON", {
+          theFilePath:
+            "https://media.ipsosinteractive.com/deploy/templates/iis-sharky/v3.0/QuestionTemplates/",
+          StudyProperties: {
+            GridAlternateColorRow: true,
+            GridAlternateColorCol: true,
+            FishVersion: "3.0",
+            LangCode: "enca",
+            StickyQuestionTextTypes: ["SA", "MA", "OE", "NUM"],
+            endStudyProperties: ""
+          },
+          ProgressBarVersion: "minimal",
+          SnifferData: {},
+          StudyData: { IDType: "test" },
+          endStudyJSON: ""
+        });
+      </script>
+    </span>
+    <div id="wrapperContainer"></div>
+
+    <!-- scripts section   -->
+    <script>
+      // $("#wrapper", window.parent.document)
+      //   .clone()
+      //   .appendTo("#wrapperContainer");
+      $("#wrapperContainer").append(parent.window.DimWrapper);
+
+      function everythingReady() {
+        $("#mrForm").submit(function() {
+          return false;
+        });
+
+        $("body").css("overflow-x", "hidden");
+        $("body").trigger("fakeReady");
+      }
+    </script>
+    <script
+      type="text/javascript"
+      src="https://cdn.ipsosinteractive.com/deploy/templates/iis-sharky/v3.0-unm/js/functions.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.ipsosinteractive.com/deploy/templates/iis-sharky/v3.0-unm/js/core.js"
+    ></script>
+  </body>
+  <div></div>
+  <span class="mrBannerText"></span>
+</html>

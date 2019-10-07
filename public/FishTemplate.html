@@ -15,27 +15,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Research</title>
     <script>
-      document.domain = (function() {
-        var pattern =
-          "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
-        if (window.location.hostname.toString().match(new RegExp(pattern))) {
-          return window.location.hostname;
-        } else {
-          return window.location.hostname.substr(
-            window.location.hostname.indexOf(".") + 1
-          );
-        }
-      })();
-      window.location.origin =
-        window.location.origin ||
-        (function() {
-          var host, proto, port;
-          proto = window.location.protocol;
-          host = window.location.hostname;
-          port = window.location.port ? ":" + window.location.port : "";
-
-          return proto + "//" + host + port;
+      if (document.domain != "localhost") {
+        document.domain = (function() {
+          var pattern =
+            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5]).){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
+          if (window.location.hostname.toString().match(new RegExp(pattern))) {
+            return window.location.hostname;
+          } else {
+            return window.location.hostname.substr(
+              window.location.hostname.indexOf(".") + 1
+            );
+          }
         })();
+      }
     </script>
     <div></div>
     <span class="mrBannerText">
@@ -86,10 +78,9 @@
 
     <!-- scripts section   -->
     <script>
-      // $("#wrapper", window.parent.document)
-      //   .clone()
-      //   .appendTo("#wrapperContainer");
       $("#wrapperContainer").append(parent.window.DimWrapper);
+      $("#ShortApp").remove();
+      $("#appMainCont").remove();
 
       function everythingReady() {
         $("#mrForm").submit(function() {

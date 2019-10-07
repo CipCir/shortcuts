@@ -1,5 +1,5 @@
 <template>
-  <div id="app" v-if="activateModule">
+  <div id="appMainCont" v-if="activateModule">
     <div id="drawer">
       <div id="slideBtn" class="clickable" @click="slideClick()" v-html="slideBtns[slideBtnIndx]"></div>
       <div id="fakeContent" v-if="!showDrawer"></div>
@@ -7,8 +7,8 @@
         <div id="listCont" v-if="showDevices">
           <div
             class="deviceItm"
-            :class="{'selDevice':device.lbl==SelDeviceBtn.lbl}"
             v-for="(device,index) in deviceBtns"
+            :class="device.lbl==SelDeviceBtn.lbl?'selDevice':''"
             :key="index"
             @click="SetDeviceLayout(device)"
           >
@@ -49,23 +49,45 @@
           </div>
           <div class="ctrlZone">
             <span>Width:</span>
-            <input type="range" class="FrameSlider" v-model="iFrame_Width" min="400" max="1024" />
+            <input
+              type="range"
+              class="FrameSlider"
+              v-model="iFrame_Width"
+              min="400"
+              max="1024"
+              @change="UpdateDevice()"
+            />
             {{iFrame_Width}}
             <span class="dimLbl">px</span>
           </div>
           <div class="ctrlZone">
             <span>Height:</span>
-            <input type="range" class="FrameSlider" v-model="iFrame_Height" min="400" max="1024" />
+            <input
+              type="range"
+              class="FrameSlider"
+              v-model="iFrame_Height"
+              min="400"
+              max="1024"
+              @change="UpdateDevice()"
+            />
             {{iFrame_Height}}
             <span class="dimLbl">px</span>
           </div>
         </div>
-        <iframe
-          src="https://media.ipsosinteractive.com/applications/SurveyShortcuts/FishTemplate.html"
-          frameborder="0"
-          id="ESQFrame"
-          :style="'overflow:hidden;height:' + iFrame_Height +'px;width:' + iFrame_Width+'px;'"
-        />
+        <div class="smartphone" :class="SelDeviceBtn.landSc?'lansc':'portrt'">
+          <!-- <iframe
+            src="FishTemplate.html"
+            frameborder="0"
+            id="ESQFrame"
+            :style="'overflow:hidden;height:' + iFrame_Height +'px;width:' + iFrame_Width+'px;'"
+          />-->
+          <iframe
+            :src="iFrameSrc"
+            frameborder="0"
+            id="ESQFrame"
+            :style="'overflow:hidden;height:' + iFrame_Height +'px;width:' + iFrame_Width+'px;'"
+          />
+        </div>
         <div id="CloseFrame" @click="addIframe=false">
           <i class="far fa-window-close"></i>
         </div>
@@ -119,6 +141,8 @@ export default {
   // }
   data() {
     return {
+      iFrameSrc:
+        "https://media.ipsosinteractive.com/applications/SurveyShortcuts/FishTemplate.html",
       activateModule: false,
       addIframe: false,
       iFrame_Width: 411,
@@ -150,7 +174,8 @@ export default {
           action: "mobPortrait",
           color: "MobCol",
           width: 360,
-          height: 640
+          height: 640,
+          landSc: false
         },
         {
           lbl: "Mobile Landscape",
@@ -167,7 +192,8 @@ export default {
           color: "TablCol",
           action: "TabPortrait",
           width: 768,
-          height: 1024
+          height: 1024,
+          landSc: false
         },
         {
           lbl: "Tablet Landscape",
@@ -202,7 +228,15 @@ export default {
     };
   },
   created() {
-    window.DimWrapper = $("#wrapper").clone();
+    // $.holdReady(true);
+    // console.log("holding");
+    if (document.domain == "localhost") {
+      this.iFrameSrc = "FishTemplate.html";
+    }
+    $(function() {
+      window.DimWrapper = $("#wrapper").clone();
+    });
+    // $.holdReady( false);
   },
   mounted() {
     //check if ESQ page
@@ -232,17 +266,14 @@ export default {
     }
   },
   methods: {
-    SetFrameDim(device) {
-      this.iFrame_Width = device.width;
-      this.iFrame_Height = device.height;
-      this.SelDeviceBtn = device;
-    },
     SetDeviceLayout(device) {
       this.addIframe = true;
       this.showDevices = false;
       this.iFrame_Width = device.width;
       this.iFrame_Height = device.height;
-      this.SelDeviceBtn = device;
+      this.SelDeviceBtn.lbl = device.lbl;
+      this.SelDeviceBtn.landSc = device.landSc;
+      // JSON.parse(JSON.stringify(device));
     },
     openDevices() {
       this.showDevices = !this.showDevices;
@@ -368,7 +399,7 @@ export default {
       var isAlt, isCtrl, isSft;
       // move app div after panel
       $(document).ready(function() {
-        $("#app").insertAfter(".panel");
+        $("#appMainCont").insertAfter(".panel");
       });
       // action on key up
       $(document).keyup(function(e) {
@@ -1686,6 +1717,12 @@ export default {
       } else {
         return sessionStorage.getItem(key);
       }
+    },
+    UpdateDevice() {
+      console.log("updfired");
+      this.SelDeviceBtn.lbl = "";
+      this.SelDeviceBtn.landSc = this.iFrame_Width > this.iFrame_Height;
+      // this.$set(this.SelDeviceBtn, "lbl", "");
     }
   },
   computed: {
@@ -1700,9 +1737,81 @@ export default {
       }
     }
   }
+  // watch: {
+  //   iFrame_Width: function(val) {
+  //     console.log("fired");
+  //     // this.UpdateDevice();
+  //     this.$set(this.SelDeviceBtn.lbl, "");
+  //   }
+  // }
 };
 </script>
 <style>
+/* The device with borders */
+.smartphone {
+  position: relative;
+  margin: auto;
+  border: 16px black solid;
+  border-radius: 36px;
+}
+.smartphone.lansc {
+  border-left-width: 60px;
+  border-right-width: 60px;
+}
+.smartphone.portrt {
+  border-top-width: 60px;
+  border-bottom-width: 60px;
+}
+
+/* The horizontal line on the top of the device */
+.smartphone:before {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 5px;
+  position: absolute;
+  background: #333;
+  border-radius: 10px;
+}
+.portrt:before {
+  top: -30px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.lansc:before {
+  top: 50%;
+  left: -60px;
+  transform: rotate(-90deg);
+}
+
+/* The circle on the bottom of the device */
+.smartphone:after {
+  content: "";
+  display: block;
+  width: 35px;
+  height: 35px;
+  position: absolute;
+
+  background: #333;
+  border-radius: 50%;
+}
+.portrt:after {
+  left: 50%;
+  bottom: -65px;
+  transform: translate(-50%, -50%);
+}
+.lansc:after {
+  top: 47%;
+  right: -47px;
+  transform: rotate(-90deg);
+}
+
+/* The screen (or content) of the device */
+.smartphone .content {
+  width: 360px;
+  height: 640px;
+  background: white;
+}
 #iframeContainer {
   display: flex;
   align-items: center;
@@ -1716,6 +1825,7 @@ export default {
   left: 0;
   flex-direction: column;
   z-index: 999999;
+  overflow: auto;
 }
 
 .FrameSlider {

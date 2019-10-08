@@ -34,66 +34,15 @@
         </div>
       </div>
     </div>
-    <div v-if="addIframe">
-      <div id="iframeContainer" @click.self="addIframe=false">
-        <div id="FrameDimControls">
-          <!-- <input type="text" id="iWidht"  /> -->
-          <div
-            class="deviceItmFrame"
-            :class="{'selDevice':device.lbl==SelDeviceBtn.lbl}"
-            v-for="(device,index) in deviceBtns"
-            :key="index"
-            @click="SetDeviceLayout(device)"
-          >
-            <i :class="[device.icon,{'landSk':device.landSc},device.color]"></i>
-          </div>
-          <div class="ctrlZone">
-            <span>Width:</span>
-            <input
-              type="range"
-              class="FrameSlider"
-              v-model="iFrame_Width"
-              min="400"
-              max="1024"
-              @change="UpdateDevice()"
-            />
-            {{iFrame_Width}}
-            <span class="dimLbl">px</span>
-          </div>
-          <div class="ctrlZone">
-            <span>Height:</span>
-            <input
-              type="range"
-              class="FrameSlider"
-              v-model="iFrame_Height"
-              min="400"
-              max="1024"
-              @change="UpdateDevice()"
-            />
-            {{iFrame_Height}}
-            <span class="dimLbl">px</span>
-          </div>
-        </div>
-        <div class="smartphone" :class="SelDeviceBtn.landSc?'lansc':'portrt'">
-          <!-- <iframe
-            src="FishTemplate.html"
-            frameborder="0"
-            id="ESQFrame"
-            :style="'overflow:hidden;height:' + iFrame_Height +'px;width:' + iFrame_Width+'px;'"
-          />-->
-          <iframe
-            :src="iFrameSrc"
-            frameborder="0"
-            id="ESQFrame"
-            :style="'overflow:hidden;height:' + iFrame_Height +'px;width:' + iFrame_Width+'px;'"
-          />
-        </div>
-        <div id="CloseFrame" @click="addIframe=false">
-          <i class="far fa-window-close"></i>
-        </div>
-      </div>
-    </div>
-
+    <!-- iFrame structure -->
+    <DeviceFrame
+      v-if="addIframe"
+      :initSelDeviceBtn="SelDeviceBtn"
+      :deviceBtns="deviceBtns"
+      v-on:closeiFrame="CloseiFrame()"
+      v-on:updSelDeviceBtn="UpdateSelDeviceBtn($event)"
+    />
+    <!-- Modal structure -->
     <div v-if="showModal" id="vueModBackCont" @click.self="closeModal()">
       <div id="vueModMainCont">
         <div id="vueModHeader">
@@ -129,24 +78,30 @@
         </div>
       </div>
     </div>
+    <!-- Random data loader -->
+    <RandomData
+      v-if="LoadRandomData"
+      :SubmitPage="ActionSubmit"
+      v-on:unsetRandomData="UnLoadRandomData()"
+    />
   </div>
 </template>
 
 <script>
 import { debuglog } from "util";
+import DeviceFrame from "./components/DeviceFrame.vue";
+import RandomData from "./components/RandomData.vue";
 export default {
   name: "app",
-  // components: {
-  //   HelloWorld
-  // }
+  components: {
+    DeviceFrame,
+    RandomData
+  },
   data() {
     return {
-      iFrameSrc:
-        "https://media.ipsosinteractive.com/applications/SurveyShortcuts/FishTemplate.html",
       activateModule: false,
       addIframe: false,
-      iFrame_Width: 411,
-      iFrame_Height: 731,
+
       showDrawer: false,
       showBtns: false,
       showModal: false,
@@ -157,11 +112,7 @@ export default {
         '<i class="far fa-caret-square-down"></i>'
       ],
       actionBtns: [
-        // {
-        //   lbl: "Previous page",
-        //   icon: "fas fa-step-backward",
-        //   action: "navPrev"
-        // },
+        // {lbl: "Previous page",icon: "fas fa-step-backward",action: "navPrev"},
         { lbl: "Question preview", icon: "far fa-eye", action: "preview" },
         { lbl: "Show/hide precodes", icon: "fas fa-code", action: "codes" },
         { lbl: "Random data", icon: "fas fa-random", action: "randomData" },
@@ -191,7 +142,7 @@ export default {
           icon: "fas fa-tablet-alt",
           color: "TablCol",
           action: "TabPortrait",
-          width: 768,
+          width: 767,
           height: 1024,
           landSc: false
         },
@@ -202,14 +153,8 @@ export default {
           color: "TablCol",
           landSc: true,
           width: 1024,
-          height: 768
+          height: 767
         }
-        // {
-        //   lbl: "Desktop",
-        //   icon: "fas fa-desktop",
-        //   color: "DeskCol",
-        //   action: "mobPortrait"
-        // }
       ],
       SelDeviceBtn: { lbl: "" },
       CodesAreShowed: true,
@@ -224,56 +169,73 @@ export default {
       ],
       ActiveSort: "file",
       currQName: null,
-      curQIndex: null
+      curQIndex: null,
+      LoadRandomData: false,
+      ActionSubmit: false
     };
   },
   created() {
-    // $.holdReady(true);
-    // console.log("holding");
-    if (document.domain == "localhost") {
-      this.iFrameSrc = "FishTemplate.html";
-    }
     $(function() {
-      window.DimWrapper = $("#wrapper").clone();
+      if (typeof window.DimWrapper === "undefined") {
+        window.DimWrapper = $("#wrapper").html();
+      }
     });
-    // $.holdReady( false);
   },
   mounted() {
-    //check if ESQ page
-    this.currQName = $("input[name='I.SavePoint']").val();
+    let vueObj = this;
+    $(function() {
+      //check if ESQ page
+      vueObj.currQName = $("input[name='I.SavePoint']").val();
+      console.log("CurrentQ: " + vueObj.currQName);
 
-    // check if module should be activated
-    if (sessionStorage == undefined) {
-      console.log("no session storage");
-      this.activateModule = false;
-      if (this.currQName == "skipped_questions") {
-        window.everythingReady = function() {
-          $(".mrNext").click();
-        };
+      // check if module should be activated
+      if (sessionStorage == undefined) {
+        console.log("no session storage");
+        vueObj.activateModule = false;
+        if (vueObj.currQName == "skipped_questions") {
+          window.everythingReady = function() {
+            $(".mrNext").click();
+          };
+        }
+        return false;
       }
-      return false;
-    }
-    let ESQq = sessionStorage.getItem("ESQ_selQ");
-    if (ESQq) {
-      this.SelViewQ = JSON.parse(ESQq);
-    }
+      let ESQq = sessionStorage.getItem("ESQ_selQ");
+      if (ESQq) {
+        vueObj.SelViewQ = JSON.parse(ESQq);
+      }
 
-    if (this.currQName == "skipped_questions") {
-      this.runESQSetup();
-    } else {
-      //run setup for normal pages
-      this.runNormalSetup();
-    }
+      if (vueObj.currQName == "skipped_questions") {
+        vueObj.runESQSetup();
+      } else {
+        //run setup for normal pages
+        vueObj.runNormalSetup();
+      }
+    });
   },
   methods: {
+    UnLoadRandomData() {
+      this.LoadRandomData = false;
+      if (this.ActionSubmit) {
+        this.navigate(".mrNext");
+      }
+    },
+    CloseiFrame() {
+      this.addIframe = false;
+      this.showDevices = false;
+    },
+    UpdateSelDeviceBtn(selDevice) {
+      this.SelDeviceBtn.lbl = selDevice.lbl;
+      this.SelDeviceBtn.landSc = selDevice.landSc;
+      this.SelDeviceBtn.height = selDevice.height;
+      this.SelDeviceBtn.width = selDevice.width;
+    },
     SetDeviceLayout(device) {
       this.addIframe = true;
       this.showDevices = false;
-      this.iFrame_Width = device.width;
-      this.iFrame_Height = device.height;
+      this.SelDeviceBtn.width = device.width;
+      this.SelDeviceBtn.height = device.height;
       this.SelDeviceBtn.lbl = device.lbl;
       this.SelDeviceBtn.landSc = device.landSc;
-      // JSON.parse(JSON.stringify(device));
     },
     openDevices() {
       this.showDevices = !this.showDevices;
@@ -311,10 +273,9 @@ export default {
               .find("input[id*='_Q1_C0']")
               .prop("checked", true);
           });
-          // $("body").trigger("fakeReady");
+
           $(".mrNext").click();
         };
-        // }, 10);
       }
       //reset submited Q
       sessionStorage.setItem("ESQ_submQ", "[]");
@@ -337,10 +298,6 @@ export default {
       console.log("inESQq:", inESQq);
       console.log("curQIndex:", curQIndex);
       if (curQIndex == -1 && !inESQq) {
-        // $("#mrForm").submit(function() {
-        //   vueObj.QSeenArr.push(this.currQName);
-        //   sessionStorage.setItem("ESQ_toSubm", JSON.stringify(vueObj.QSeenArr));
-        // });
         //bind events
 
         setTimeout(function() {
@@ -397,10 +354,7 @@ export default {
       // this.ViewQuestions.sort();
       this.showDrawer = this.getStorage("ESQ_showDrawer") == "true";
       var isAlt, isCtrl, isSft;
-      // move app div after panel
-      $(document).ready(function() {
-        $("#appMainCont").insertAfter(".panel");
-      });
+
       // action on key up
       $(document).keyup(function(e) {
         if (e.which == 18) {
@@ -502,8 +456,9 @@ export default {
       this.slideBtnIndx = this.showDrawer ? 1 : 0;
       this.updateStorage("ESQ_showDrawer", this.showDrawer);
     },
-    ShowESQModal() {},
+
     DoBtnAction(act) {
+      this.LoadRandomData = false;
       switch (act) {
         case "preview":
           this.previewQ();
@@ -512,15 +467,12 @@ export default {
           this.showCodes();
           break;
         case "randomData":
-          this.setRandomData();
+          this.setRandomData(false);
           break;
         case "navNext":
-          this.setRandomData();
-          this.navigate(".mrNext");
+          this.setRandomData(true);
           break;
-        case "navPrev":
-          this.navigate(".mrPrev");
-          break;
+
         case "openInfo":
           this.openInfoPopup();
           break;
@@ -537,7 +489,6 @@ export default {
         // show codes
         if ($(".inputPrecode").length == 0) {
           $(".question-controls-container input").each(function() {
-            debugger;
             if (
               $(this).hasClass("mrSingle") ||
               $(this).hasClass("mrMultiple")
@@ -562,1143 +513,9 @@ export default {
       }
       this.CodesAreShowed = !this.CodesAreShowed;
     },
-    setRandomData() {
-      $(".question-container").removeClass("questionReadyForSubmit");
-      if ($(".question-container").length > 0) {
-        $(".question-container").each(function() {
-          if (
-            ($(this).find("input[disabled]").length != 0 ||
-              $(this).find("input").length == 0) &&
-            ($(this).find("select[disabled]").length != 0 ||
-              $(this).find("select").length == 0) &&
-            ($(this).find("textarea[disabled]").length != 0 ||
-              $(this).find("textarea").length == 0)
-          ) {
-            //Populate with answers only if not Read-only and if not INFO
-            $(this).addClass("questionReadyForSubmit");
-            //AutoAnswer(".question-container");
-          } else {
-            //Single Answer
-            if ($(this).hasClass("QType-SA")) {
-              if ($(this).hasClass("Slider")) {
-                //Slider
-                $(this)
-                  .find(".mrSingle")
-                  .prop("checked", false);
-                var availableOptions = $(this).find(".mrSingle").length;
-                var randomOption = Math.floor(
-                  Math.random() * availableOptions + 1
-                );
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .prop("checked", true);
-                $(this)
-                  .find(".slider")
-                  .slider("value", randomOption);
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if ($(this).hasClass("CategoricalButtons")) {
-                //Categorical Buttons
-                $(this)
-                  .find(".mrSingle")
-                  .prop("checked", false);
-                var availableOptions = $(this).find(".mrSingle").length;
-                var randomOption = Math.floor(Math.random() * availableOptions);
-                $(this)
-                  .find(".answer-container:eq(" + randomOption + ")")
-                  .click();
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .prop("checked", true);
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if ($(this).hasClass("CategoricalVolumeControl")) {
-                //VolumeControl
-                $(this)
-                  .find(".mrSingle")
-                  .prop("checked", false);
-                var availableOptions = $(this).find(".mrSingle").length;
-                var randomOption = Math.floor(Math.random() * availableOptions);
-                $(this)
-                  .find(".VC_bar:eq(" + randomOption + ")")
-                  .click();
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .prop("checked", true);
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if ($(this).hasClass("CategoricalClickImages")) {
-                //SA CategoricalClickImages
-                $(this)
-                  .find(".mrSingle")
-                  .prop("checked", false);
-                var availableOptions = $(this).find(".mrSingle").length;
-                var randomOption = Math.floor(Math.random() * availableOptions);
-                $(this)
-                  .find(".mrSingleText:eq(" + randomOption + ")")
-                  .click();
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .prop("checked", true);
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if ($(this).hasClass("Categorical")) {
-                //Expandable SA Categorical
-                $(this)
-                  .find(".mrSingle")
-                  .prop("checked", false);
-                $(this)
-                  .find(".mrSingle")
-                  .closest("label")
-                  .removeClass("cellCheckedBackground");
-                $(this)
-                  .find(".header")
-                  .removeClass("showMe");
-                var availableOptions = $(this).find(".mrSingle").length;
-                var randomOption = Math.floor(Math.random() * availableOptions);
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .closest(".subList")
-                  .prev(".header")
-                  .addClass("showMe");
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .prop("checked", true);
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .closest("label")
-                  .addClass("cellCheckedBackground");
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else {
-                $(this)
-                  .find(".mrSingle")
-                  .prop("checked", false);
-                $(this)
-                  .find(".mrSingle")
-                  .closest("label")
-                  .removeClass("cellCheckedBackground");
-                $(this)
-                  .find(".mrEdit")
-                  .val("");
-                var availableOptions = $(this).find(".mrSingle").length;
-                var randomOption = Math.floor(Math.random() * availableOptions);
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .click();
-                $(this)
-                  .find(".mrSingle:eq(" + randomOption + ")")
-                  .closest("label")
-                  .addClass("cellCheckedBackground");
-                //if Other(Specify)
-                if (
-                  $(this)
-                    .find(".mrSingle:eq(" + randomOption + ")")
-                    .closest(".answer-container")
-                    .find(".mrEdit").length > 0
-                ) {
-                  if (
-                    $(this)
-                      .find(".mrSingle:eq(" + randomOption + ")")
-                      .closest(".answer-container")
-                      .find(".mrSingleText")
-                      .text().length == 0
-                  ) {
-                    $(this)
-                      .find(".mrSingle:eq(" + randomOption + ")")
-                      .closest(".answer-container")
-                      .find(".mrEdit")
-                      .val(
-                        $(".question-container .mrQuestionText:eq(0)")
-                          .text()
-                          .slice(
-                            0,
-                            $(this)
-                              .find(".mrSingle:eq(" + randomOption + ")")
-                              .closest(".answer-container")
-                              .find(".mrEdit")
-                              .attr("maxlength")
-                          )
-                      )
-                      .trigger("blur");
-                  } else {
-                    $(this)
-                      .find(".mrSingle:eq(" + randomOption + ")")
-                      .closest(".answer-container")
-                      .find(".mrEdit")
-                      .val(
-                        $(this)
-                          .find(".mrSingle:eq(" + randomOption + ")")
-                          .closest(".answer-container")
-                          .find(".mrSingleText")
-                          .text()
-                          .slice(
-                            0,
-                            $(this)
-                              .find(".mrSingle:eq(" + randomOption + ")")
-                              .closest(".answer-container")
-                              .find(".mrEdit")
-                              .attr("maxlength")
-                          )
-                      )
-                      .trigger("blur");
-                  }
-                }
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              }
-            }
-            //SP DropDown
-            if ($(this).hasClass("QType-DROPDOWN")) {
-              var availableOptions = $(this).find("select option").length;
-              var randomOption = Math.floor(Math.random() * availableOptions);
-              if (randomOption == 0) {
-                randomOption = 1;
-              }
-              $(this)
-                .find("select option:eq(" + randomOption + ")")
-                .prop("selected", true);
-              $(this).addClass("questionReadyForSubmit");
-              //AutoAnswer(".question-container");
-            }
-            //GRID SP DropDown
-            if (
-              $(this).hasClass("QType-GRID") &&
-              $(this).hasClass("QSubType-DROPDOWN")
-            ) {
-              var availableOptions = $(this).find("select:first option").length;
-              var randomOption = 0;
-              $(this)
-                .find("select")
-                .each(function() {
-                  randomOption = Math.floor(Math.random() * availableOptions);
-                  if (randomOption == 0) {
-                    randomOption = 1;
-                  }
-                  $(this)
-                    .find("option:eq(" + randomOption + ")")
-                    .prop("selected", true);
-                });
-              $(this).addClass("questionReadyForSubmit");
-              //AutoAnswer(".question-container");
-            }
-            //Multiple Answers
-            if ($(this).hasClass("QType-MA")) {
-              if ($(this).hasClass("CategoricalClickImages")) {
-                //MA Click Images
-                $(this)
-                  .find(".mrMultiple")
-                  .prop("checked", false);
-                var availableOptions = $(this).find(".mrMultiple").length;
-                var howManyOptions = Math.floor(
-                  Math.random() * availableOptions + 1
-                );
-                var clickOption;
-                for (var i = 0; i < howManyOptions; i++) {
-                  var clickOption = Math.floor(
-                    Math.random() * availableOptions
-                  );
-                  if (
-                    $(this).find(".answerInside:eq(" + clickOption + ")")
-                      .length > 0
-                  ) {
-                    $(this)
-                      .find(".answerInside:eq(" + clickOption + ")")
-                      .click();
-                  } else {
-                    $(this)
-                      .find(".mrMultiple:eq(" + clickOption + ")")
-                      .click();
-                  }
-                }
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if ($(this).hasClass("Categorical")) {
-                //Expandable MA Categorical
-                $(this)
-                  .find(".mrMultiple")
-                  .prop("checked", false);
-                $(this)
-                  .find(".mrMultiple")
-                  .closest("label")
-                  .removeClass("cellCheckedBackground");
-                var availableOptions = $(this).find(".mrMultiple").length;
-                var howManyOptions = Math.floor(
-                  Math.random() * availableOptions + 1
-                );
-                var clickOption;
-                for (var i = 0; i < howManyOptions; i++) {
-                  $(this)
-                    .find(".mrMultiple")
-                    .closest("label")
-                    .removeClass("cellCheckedBackground");
-                  $(this)
-                    .find(".subList")
-                    .prev(".header")
-                    .removeClass("showMe");
-                  var clickOption = Math.floor(
-                    Math.random() * availableOptions
-                  );
-                  $(this)
-                    .find(".mrMultiple:eq(" + clickOption + ")")
-                    .click();
-                  $(this)
-                    .find(".mrMultiple:checked")
-                    .closest("label")
-                    .addClass("cellCheckedBackground");
-                  $(this)
-                    .find(".mrMultiple:checked")
-                    .closest(".subList")
-                    .prev(".header")
-                    .addClass("showMe");
-                }
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if ($(this).hasClass("CategoricalButtons")) {
-                $(this)
-                  .find(".mrMultiple")
-                  .prop("checked", false);
-                $(".btn-checked").removeClass("btn-checked");
-                var availableOptions = $(this).find(".mrMultiple").length;
-                var howManyOptions = Math.floor(
-                  Math.random() * availableOptions + 1
-                );
-                var clickOption;
-                for (var i = 0; i < howManyOptions; i++) {
-                  var clickOption = Math.floor(
-                    Math.random() * availableOptions
-                  );
-                  clickOption = clickOption == 0 ? 0 : clickOption;
-                  $(this)
-                    .find(".label-with-mrMultiple:eq(" + clickOption + ")")
-                    .click();
-
-                  //if Other(Specify)
-                  if (
-                    $(this)
-                      .find(".mrMultiple:eq(" + clickOption + ")")
-                      .closest(".answer-container")
-                      .find(".mrEdit").length > 0
-                  ) {
-                    if (
-                      $(this)
-                        .find(".mrMultiple:eq(" + clickOption + ")")
-                        .is(":checked")
-                    ) {
-                      $(this)
-                        .find(".mrMultiple:eq(" + clickOption + ")")
-                        .closest(".answer-container")
-                        .find(".mrEdit")
-                        .val(
-                          $(this)
-                            .find(".mrMultiple:eq(" + clickOption + ")")
-                            .closest(".answer-container")
-                            .find(".mrMultipleText")
-                            .text()
-                            .slice(
-                              0,
-                              $(this)
-                                .find(".mrMultiple:eq(" + clickOption + ")")
-                                .closest(".answer-container")
-                                .find(".mrEdit")
-                                .attr("maxlength")
-                            )
-                        )
-                        .trigger("blur");
-                    } else {
-                      $(this)
-                        .find(".mrMultiple:eq(" + clickOption + ")")
-                        .closest(".answer-container")
-                        .find(".mrEdit")
-                        .val("")
-                        .trigger("blur");
-                    }
-                  }
-                }
-                $(this).addClass("questionReadyForSubmit");
-              } else {
-                $(this)
-                  .find(".mrMultiple")
-                  .prop("checked", false);
-                $(this)
-                  .find(".mrMultiple")
-                  .closest("label")
-                  .removeClass("cellCheckedBackground");
-                $(this)
-                  .find(".mrEdit")
-                  .val("");
-                var availableOptions = $(this).find(".mrMultiple").length;
-                var howManyOptions = Math.floor(
-                  Math.random() * availableOptions + 1
-                );
-                var clickOption;
-                for (var i = 0; i < howManyOptions; i++) {
-                  var clickOption = Math.floor(
-                    Math.random() * availableOptions
-                  );
-                  $(this)
-                    .find(".mrMultiple:eq(" + clickOption + ")")
-                    .click();
-                  $(this)
-                    .find(".label-with-mrMultiple:eq(" + clickOption + ")")
-                    .click();
-                  //.prop("checked", true);
-                  //if Other(Specify)
-                  if (
-                    $(this)
-                      .find(".mrMultiple:eq(" + clickOption + ")")
-                      .closest(".answer-container")
-                      .find(".mrEdit").length > 0
-                  ) {
-                    if (
-                      $(this)
-                        .find(".mrMultiple:eq(" + clickOption + ")")
-                        .is(":checked")
-                    ) {
-                      $(this)
-                        .find(".mrMultiple:eq(" + clickOption + ")")
-                        .closest(".answer-container")
-                        .find(".mrEdit")
-                        .val(
-                          $(this)
-                            .find(".mrMultiple:eq(" + clickOption + ")")
-                            .closest(".answer-container")
-                            .find(".mrMultipleText")
-                            .text()
-                            .slice(
-                              0,
-                              $(this)
-                                .find(".mrMultiple:eq(" + clickOption + ")")
-                                .closest(".answer-container")
-                                .find(".mrEdit")
-                                .attr("maxlength")
-                            )
-                        )
-                        .trigger("blur");
-                    } else {
-                      $(this)
-                        .find(".mrMultiple:eq(" + clickOption + ")")
-                        .closest(".answer-container")
-                        .find(".mrEdit")
-                        .val("")
-                        .trigger("blur");
-                    }
-                  }
-                }
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              }
-            }
-            //OE
-            if ($(this).hasClass("QType-OE")) {
-              //SLIDER OE
-              if ($(this).hasClass("Slider")) {
-                $(this)
-                  .find(".mrEdit")
-                  .val("");
-                var parsedJSON = JSON.parse($(".customJSONproperties").text());
-                var sliderMin = 1;
-                var sliderMax = 10;
-                if (
-                  parsedJSON.SliderMin != 1 &&
-                  parsedJSON.SliderMin != undefined
-                ) {
-                  sliderMin = parsedJSON.SliderMin;
-                }
-                if (
-                  parsedJSON.SliderMax != 10 &&
-                  parsedJSON.SliderMax != undefined
-                ) {
-                  sliderMax = parsedJSON.SliderMax;
-                }
-                var randomPunch = Math.floor(
-                  Math.random() * (sliderMax - sliderMin) + sliderMin
-                );
-                //if slider with checkbox
-                if ($(this).find(".mrMultiple").length > 0) {
-                  var rNumber = Math.floor(Math.random() * 10 + 1);
-                  if (rNumber < 4) {
-                    $(this)
-                      .find(".mrMultiple")
-                      .click();
-                  } else {
-                    $(this)
-                      .find(".slider")
-                      .slider("value", randomPunch);
-                  }
-                } else {
-                  $(this)
-                    .find(".slider")
-                    .slider("value", randomPunch);
-                }
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else {
-                // $(this)
-                //   .find(".mrEdit")
-                //   .val("");
-                var textLength = $(this)
-                  .find(".mrQuestionText:first")
-                  .text().length;
-                var randomLength = Math.floor(Math.random() * textLength);
-                $(this)
-                  .find(".mrEdit")
-                  .val(
-                    $(this)
-                      .find(".mrQuestionText")
-                      .text()
-                      .substring(1, randomLength)
-                  );
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              }
-            }
-            //NUMERIC
-            if ($(this).hasClass("QType-NUM")) {
-              //SLIDER NUMERIC + CLOSENESS
-              if ($(this).hasClass("Slider")) {
-                $(this)
-                  .find(".mrEdit")
-                  .val("");
-                var sliderMax = $(this).find(".slider-label-value").length;
-                var randomPunch = Math.floor(Math.random() * sliderMax + 1);
-                //if slider with checkbox
-                if ($(this).find(".mrMultiple").length > 0) {
-                  var rNumber = Math.floor(Math.random() * 10 + 1);
-                  if (rNumber < 4) {
-                    $(this)
-                      .find(".mrMultiple")
-                      .click();
-                  } else {
-                    $(this)
-                      .find(".slider")
-                      .slider("value", randomPunch);
-                  }
-                } else {
-                  $(this)
-                    .find(".slider")
-                    .slider("value", randomPunch);
-                }
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else {
-                $(this)
-                  .find(".mrEdit")
-                  .val("");
-                var maxLength = $(this)
-                  .find(".mrEdit")
-                  .attr("maxlength");
-                if (maxLength > 3) {
-                  maxLength = 3;
-                }
-                var randomNumber = Math.floor(
-                  Math.random() * Math.pow(10, maxLength) - 1
-                );
-                $(this)
-                  .find(".mrEdit")
-                  .val(randomNumber);
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              }
-            }
-            //GRID
-            if ($(this).hasClass("QType-GRID")) {
-              //Sliders
-              if (
-                $(this).hasClass("QSubType-NUM") &&
-                $(this).hasClass("Slider")
-              ) {
-                var sliderMax = $(this).find(
-                  ".mrQuestionTable tr:first .slider-label-value"
-                ).length;
-                var randomOption = 0;
-                $(this)
-                  .find(".slider")
-                  .closest("tr")
-                  .each(function() {
-                    randomOption = Math.floor(Math.random() * sliderMax + 1);
-                    //if slider with checkbox
-                    if ($(this).find(".mrMultiple").length > 0) {
-                      var rNumber = Math.floor(Math.random() * 10 + 1);
-                      if (rNumber < 4) {
-                        $(this)
-                          .find(".mrMultiple")
-                          .click();
-                      } else {
-                        $(this)
-                          .find(".slider")
-                          .slider("value", randomOption);
-                      }
-                    } else {
-                      $(this)
-                        .find(".slider")
-                        .slider("value", randomOption);
-                    }
-                  });
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if (
-                $(this).hasClass("QSubType-NUM") &&
-                $(this).hasClass("GridProgressive")
-              ) {
-                //GridProgressive with Slider
-                var sliderMax = $(this).find(".Slider .slider-label-value")
-                  .length;
-                var randomOption = 0;
-                $(this)
-                  .find("tr")
-                  .each(function() {
-                    randomOption = Math.floor(Math.random() * sliderMax + 1);
-                    if ($(this).find(".mrMultiple").length > 0) {
-                      var rNumber = Math.floor(Math.random() * 10 + 1);
-                      if (rNumber < 4) {
-                        $(this)
-                          .find(".mrMultiple")
-                          .click()
-                          .prop("checked", true);
-                      } else {
-                        $(this)
-                          .find(".mrEdit")
-                          .val(randomOption)
-                          .change();
-                      }
-                    } else {
-                      $(this)
-                        .find(".mrEdit")
-                        .val(randomOption)
-                        .change();
-                    }
-                  });
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if (
-                $(this).hasClass("QSubType-OE") &&
-                $(this).hasClass("GridProgressive")
-              ) {
-                //GridProgressive with Closeness
-                var sliderMax = $(this).find(".Slider .slider-label-value")
-                  .length;
-                var randomOption = 0;
-                $(this)
-                  .find("tr")
-                  .each(function() {
-                    randomOption = Math.floor(Math.random() * sliderMax + 1);
-                    $(this)
-                      .find(".mrEdit")
-                      .val(randomOption)
-                      .change();
-                  });
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if (
-                $(this).hasClass("QSubType-SA") &&
-                $(this).hasClass("Slider")
-              ) {
-                //GridBipolar
-                var sliderMax = $(this).find(
-                  ".mrQuestionTable tr:eq(1) .mrSingle"
-                ).length;
-                var randomOption = 0;
-                $(this)
-                  .find(".slider")
-                  .closest("tr")
-                  .each(function() {
-                    randomOption = Math.floor(Math.random() * sliderMax + 1);
-                    $(this)
-                      .find(".slider")
-                      .slider("value", randomOption);
-                  });
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if ($(this).hasClass("QSubType-NUM")) {
-                //GridOpenEnd Numeric
-                $(this)
-                  .find(".mrEdit")
-                  .val("");
-                var maxLength = $(this)
-                  .find(".mrEdit:first")
-                  .attr("maxlength");
-                if (maxLength > 2) {
-                  maxLength = 2;
-                }
-                var randomNumber = 0;
-                $(this)
-                  .find(".mrEdit")
-                  .each(function() {
-                    randomNumber = Math.floor(
-                      Math.random() * Math.pow(10, maxLength) - 1
-                    );
-                    $(this)
-                      .val(randomNumber)
-                      .change();
-                  });
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              } else if ($(this).hasClass("QSubType-OE")) {
-                //GridOpenEnd
-                //var textLength = $(this).find('.mrQuestionText:first').text().length;
-                var textLength = $(this)
-                  .find(".mrEdit:first")
-                  .attr("maxlength");
-                $(this)
-                  .find(".mrEdit")
-                  .each(function(index) {
-                    $(this).val("");
-                    var randomLength = Math.floor(
-                      Math.random() * textLength + 1
-                    );
-                    $(this).val(
-                      $(".QSubType-OE")
-                        .find(".mrQuestionText")
-                        .text()
-                        .substring(0, randomLength)
-                    );
-                  });
-                $(this).addClass("questionReadyForSubmit");
-                //AutoAnswer(".question-container");
-              }
-            }
-            //Grid SA/ROW
-            if ($(this).hasClass("QType-GRID QSubType-SA QOrientation-ROW")) {
-              $(this)
-                .find(".mrSingle")
-                .prop("checked", false);
-              $(this)
-                .find(".mrSingle")
-                .closest("div")
-                .removeClass("cellCheckedBackground");
-              $(this)
-                .find(".mrEdit")
-                .val("");
-              var availableOptions = $(this).find(
-                ".mrQuestionTable tr:eq(1) .mrSingle"
-              ).length;
-              var randomOption = 0;
-              $(this)
-                .find(".mrQuestionTable tr:not(:first)")
-                .each(function() {
-                  randomOption = Math.floor(Math.random() * availableOptions);
-                  $(this)
-                    .find(".mrSingle:eq(" + randomOption + ")")
-                    .click();
-                  $(this)
-                    .find(".mrSingle:eq(" + randomOption + ")")
-                    .closest("div")
-                    .addClass("cellCheckedBackground");
-                  //if Other(Specify)
-                  if (
-                    $(this)
-                      .find(".mrSingle:eq(" + randomOption + ")")
-                      .closest(".answer-container")
-                      .find(".mrEdit").length > 0
-                  ) {
-                    $(this)
-                      .find(".mrSingle:eq(" + randomOption + ")")
-                      .closest(".answer-container")
-                      .find(".mrEdit")
-                      .val(
-                        $(this)
-                          .closest(".mrQuestionTable")
-                          .find(
-                            "tr:eq(0) td:eq(" +
-                              (randomOption + 1) +
-                              ") .mrQuestionText"
-                          )
-                          .text()
-                          .slice(
-                            0,
-                            $(this)
-                              .find(".mrSingle:eq(" + randomOption + ")")
-                              .closest(".answer-container")
-                              .find(".mrEdit")
-                              .attr("maxlength")
-                          )
-                      )
-                      .trigger("blur");
-                  }
-                });
-              //if GridCollapsible
-              if ($(this).hasClass("Grid")) {
-                $(this)
-                  .find(".GridCollapsible tr:last-child td:first-child")
-                  .trigger("click");
-              }
-              $(this).addClass("questionReadyForSubmit");
-              //AutoAnswer(".question-container");
-              //}
-            }
-            //Grid MA/ROW
-            if ($(this).hasClass("QType-GRID QSubType-MA QOrientation-ROW")) {
-              $(this)
-                .find(".mrMultiple")
-                .prop("checked", false);
-              $(this)
-                .find(".mrMultiple")
-                .closest("div")
-                .removeClass("cellCheckedBackground");
-              $(this)
-                .find(".mrEdit")
-                .val("");
-              var availableOptions = $(this).find(
-                ".mrQuestionTable tr:eq(1) .mrMultiple"
-              ).length;
-              var howManyOptions = 0;
-              var clickOption = 0;
-              $(this)
-                .find(".mrQuestionTable tr:not(:first)")
-                .each(function(index) {
-                  howManyOptions = Math.floor(
-                    Math.random() * availableOptions + 1
-                  );
-                  if (howManyOptions % 2 == 0) {
-                    howManyOptions = howManyOptions + 1;
-                  }
-                  for (var i = 0; i < howManyOptions; i++) {
-                    clickOption = Math.floor(
-                      Math.random() * (availableOptions - 1)
-                    );
-                    $(this)
-                      .find(".mrMultiple:eq(" + clickOption + ")")
-                      .click();
-                    //if Other(Specify)
-                    if (
-                      $(this)
-                        .find(".mrMultiple:eq(" + clickOption + ")")
-                        .closest(".answer-container")
-                        .find(".mrEdit").length > 0
-                    ) {
-                      if (
-                        $(this)
-                          .find(".mrMultiple:eq(" + clickOption + ")")
-                          .is(":checked")
-                      ) {
-                        $(this)
-                          .find(".mrMultiple:eq(" + clickOption + ")")
-                          .closest(".answer-container")
-                          .find(".mrEdit")
-                          .val(
-                            $(this)
-                              .closest(".mrQuestionTable")
-                              .find(
-                                "tr:eq(0) td:eq(" +
-                                  (clickOption + 1) +
-                                  ") .mrQuestionText"
-                              )
-                              .text()
-                              .slice(
-                                0,
-                                $(this)
-                                  .find(".mrMultiple:eq(" + clickOption + ")")
-                                  .closest(".answer-container")
-                                  .find(".mrEdit")
-                                  .attr("maxlength")
-                              )
-                          )
-                          .trigger("blur");
-                      } else {
-                        $(this)
-                          .find(".mrMultiple:eq(" + clickOption + ")")
-                          .closest(".answer-container")
-                          .find(".mrEdit")
-                          .val("")
-                          .trigger("blur");
-                      }
-                    }
-                  }
-                  //re-check and erase OtherSpecify if text inside but no punch
-                  $(this)
-                    .find(".mrEdit")
-                    .each(function() {
-                      if (
-                        $(this).val() != "" &&
-                        $(this)
-                          .closest(".answer-container")
-                          .find(".mrMultiple")
-                          .is(":not(:checked)")
-                      ) {
-                        $(this).val("");
-                      }
-                    });
-                });
-              //if GridCollapsible
-              if ($(this).hasClass("Grid")) {
-                $(".GridCollapsible tr").each(function() {
-                  //check for exclusive + other options selected at the same time
-                  if ($(this).find(".exclusive-element").length > 0) {
-                    if (
-                      $(this).find(".mrMultiple:checked").length > 1 &&
-                      $(this)
-                        .find(".exclusive-element .mrMultiple")
-                        .is(":checked")
-                    ) {
-                      $(this)
-                        .find(".mrMultiple")
-                        .click();
-                    }
-                  }
-                  //check for no option selected
-                  if ($(this).find(".mrMultiple:checked").length == 0) {
-                    clickOption = Math.floor(Math.random() * availableOptions);
-                    $(this)
-                      .find(".mrMultiple:eq(" + clickOption + ")")
-                      .click();
-                  }
-                });
-                $(this)
-                  .find(".GridCollapsible tr:last-child td:first-child")
-                  .trigger("click");
-              }
-              $(this).addClass("questionReadyForSubmit");
-              //AutoAnswer(".question-container");
-              //};
-            }
-            //Grid SA/COL
-            if ($(this).hasClass("QType-GRID QSubType-SA QOrientation-COL")) {
-              $(this)
-                .find(".mrSingle")
-                .prop("checked", false);
-              $(this)
-                .find(".mrSingle")
-                .closest("div")
-                .removeClass("cellCheckedBackground");
-              $(this)
-                .find(".mrEdit")
-                .val("");
-              var availableOptions = $(this).find(
-                ".mrQuestionTable td:nth-child(2) .mrSingle"
-              ).length;
-              var randomOption = 0;
-              $(this)
-                .find(".mrQuestionTable tr:eq(0) td")
-                .not(":nth-child(1)")
-                .each(function(index) {
-                  randomOption = Math.floor(Math.random() * availableOptions);
-                  var $opt = $(this)
-                    .closest(".mrQuestionTable")
-                    .find(
-                      "tr:eq(" +
-                        (randomOption + 1) +
-                        ") td:eq(" +
-                        (index + 1) +
-                        ") .mrSingle"
-                    );
-                  $opt.click();
-                  $opt.closest("div").addClass("cellCheckedBackground");
-                  if (
-                    $opt.closest(".answer-container").find(".mrEdit").length > 0
-                  ) {
-                    $opt
-                      .closest(".answer-container")
-                      .find(".mrEdit")
-                      .val(
-                        $opt
-                          .closest("tr")
-                          .find("td:first-child .mrQuestionText")
-                          .text()
-                          .slice(
-                            0,
-                            $opt
-                              .closest(".answer-container")
-                              .find(".mrEdit")
-                              .attr("maxlength")
-                          )
-                      )
-                      .trigger("blur");
-                  }
-                });
-              $(this).addClass("questionReadyForSubmit");
-              //AutoAnswer(".question-container");
-            }
-            //Grid MA/COL
-            if ($(this).hasClass("QType-GRID QSubType-MA QOrientation-COL")) {
-              $(this)
-                .find(".mrMultiple")
-                .prop("checked", false);
-              $(this)
-                .find(".mrMultiple")
-                .closest("div")
-                .removeClass("cellCheckedBackground");
-              $(this)
-                .find(".mrEdit")
-                .val("");
-              var availableOptions = $(this).find(
-                ".mrQuestionTable td:nth-child(2) .mrMultiple"
-              ).length;
-              var numberOfCols =
-                $(this).find(".mrQuestionTable tr:eq(0) td").length + 1;
-              var randomOption = 0;
-              $(this)
-                .find(".mrQuestionTable tr:eq(0) td")
-                .not(":nth-child(1)")
-                .each(function(index) {
-                  howManyOptions = Math.floor(
-                    Math.random() * availableOptions + 1
-                  );
-                  for (var i = 0; i < howManyOptions; i++) {
-                    var clickOption = Math.floor(
-                      Math.random() * availableOptions
-                    );
-                    var $opt = $(this)
-                      .closest(".mrQuestionTable")
-                      .find(
-                        "tr:eq(" +
-                          (clickOption + 1) +
-                          ") td:eq(" +
-                          (index + 1) +
-                          ") .mrMultiple"
-                      );
-                    $opt.click();
-                    if ($opt.is(":checked")) {
-                      $opt.closest("div").addClass("cellCheckedBackground");
-                    } else {
-                      $opt.closest("div").removeClass("cellCheckedBackground");
-                    }
-                    if (
-                      $opt.closest(".answer-container").find(".mrEdit").length >
-                      0
-                    ) {
-                      if ($opt.is(":checked")) {
-                        $opt
-                          .closest(".answer-container")
-                          .find(".mrEdit")
-                          .val(
-                            $opt
-                              .closest("tr")
-                              .find("td:first-child .mrQuestionText")
-                              .text()
-                              .slice(
-                                0,
-                                $opt
-                                  .closest(".answer-container")
-                                  .find(".mrEdit")
-                                  .attr("maxlength")
-                              )
-                          )
-                          .trigger("blur");
-                      } else {
-                        $opt
-                          .closest(".answer-container")
-                          .find(".mrEdit")
-                          .val("")
-                          .trigger("blur");
-                      }
-                    }
-                  }
-                });
-              for (var k = 2; k < numberOfCols; k++) {
-                //check the first answer if no answer for that column
-                if (
-                  $(this).find(
-                    ".mrQuestionTable td:nth-child(" +
-                      k +
-                      ") .mrMultiple:checked"
-                  ).length == 0
-                ) {
-                  $(this)
-                    .find(
-                      ".mrQuestionTable td:nth-child(" +
-                        k +
-                        ") .mrMultiple:first"
-                    )
-                    .prop("checked", true);
-                  $(this)
-                    .find(
-                      ".mrQuestionTable td:nth-child(" +
-                        k +
-                        ") .mrMultiple:first"
-                    )
-                    .closest("div")
-                    .addClass("cellCheckedBackground");
-                }
-              }
-              //re-check and erase OtherSpecify if text inside but no punch
-              $(this)
-                .find(".mrEdit")
-                .each(function() {
-                  if (
-                    $(this).val() != "" &&
-                    $(this)
-                      .closest(".answer-container")
-                      .find(".mrMultiple")
-                      .is(":not(:checked)")
-                  ) {
-                    $(this).val("");
-                  }
-                });
-              $(this).addClass("questionReadyForSubmit");
-              //AutoAnswer(".question-container");
-            }
-            //Bubble Ranking
-            if ($(this).hasClass("BubbleRanking")) {
-              //get the MaxRank
-              var parsedJSON = JSON.parse($(".customJSONproperties").text());
-              var NoOfRanks = $(".rankingHolder")
-                .parent()
-                .find(".mrEdit")
-                .not(".exclusive")
-                .parentsUntil("tbody")
-                .find(".theRank").length;
-              var availableOptions = NoOfRanks;
-              var rNumber = Math.floor(Math.random() * 10 + 1);
-              if (
-                parsedJSON.MaxRank != 0 &&
-                parsedJSON.MaxRank != NoOfRanks &&
-                parsedJSON.MaxRank != undefined
-              ) {
-                NoOfRanks = parsedJSON.MaxRank;
-              }
-              //check for exclusive and punch 25% of times
-              if (
-                parsedJSON.ExclusiveCode != undefined &&
-                parsedJSON.ExclusiveCode.length > 0 &&
-                rNumber < 3
-              ) {
-                $(".exclusive")
-                  .parentsUntil("tbody")
-                  .find(".theRank")
-                  .click();
-              } else {
-                for (var i = 0; i < NoOfRanks; i++) {
-                  var clickOption = Math.floor(
-                    Math.random() * (availableOptions - i)
-                  );
-                  $(".rankingHolder")
-                    .parent()
-                    .find(".mrEdit")
-                    .not(".exclusive")
-                    .parentsUntil("tbody")
-                    .find('.theRank[data-rank=""]')
-                    .eq(clickOption)
-                    .click();
-                }
-              }
-              $(this).addClass("questionReadyForSubmit");
-              //AutoAnswer(".question-container");
-            }
-          }
-        });
-      } else if ($(".mrDropdown").length > 0) {
-        $(".mrDropdown").each(function() {
-          var availableOptions = $(this).find('option[value!=""]').length;
-          var randomOption = Math.floor(Math.random() * availableOptions);
-          if (randomOption == 0) {
-            randomOption = 1;
-          }
-          $(this)
-            .find("option:eq(" + randomOption + ")")
-            .prop("selected", true);
-          $(this).addClass("questionReadyForSubmit");
-          //AutoAnswer(".mrDropdown");
-        });
-      }
-
-      // function //AutoAnswer(object) {
-      //   var qc_l = $(object).length;
-      //   var qrfs_l = $(".questionReadyForSubmit").length;
-      //   // if ((qc_l == qrfs_l) && (Auto_Answer == 1)) {
-      //   //     // PageSubmit();
-      //   // };
-      // }
+    setRandomData(submPage) {
+      this.ActionSubmit = submPage;
+      this.LoadRandomData = true;
     },
     navigate(to) {
       console.log("nav", to);
@@ -1717,12 +534,6 @@ export default {
       } else {
         return sessionStorage.getItem(key);
       }
-    },
-    UpdateDevice() {
-      console.log("updfired");
-      this.SelDeviceBtn.lbl = "";
-      this.SelDeviceBtn.landSc = this.iFrame_Width > this.iFrame_Height;
-      // this.$set(this.SelDeviceBtn, "lbl", "");
     }
   },
   computed: {
@@ -1737,172 +548,9 @@ export default {
       }
     }
   }
-  // watch: {
-  //   iFrame_Width: function(val) {
-  //     console.log("fired");
-  //     // this.UpdateDevice();
-  //     this.$set(this.SelDeviceBtn.lbl, "");
-  //   }
-  // }
 };
 </script>
 <style>
-/* The device with borders */
-.smartphone {
-  position: relative;
-  margin: auto;
-  border: 16px black solid;
-  border-radius: 36px;
-}
-.smartphone.lansc {
-  border-left-width: 60px;
-  border-right-width: 60px;
-}
-.smartphone.portrt {
-  border-top-width: 60px;
-  border-bottom-width: 60px;
-}
-
-/* The horizontal line on the top of the device */
-.smartphone:before {
-  content: "";
-  display: block;
-  width: 60px;
-  height: 5px;
-  position: absolute;
-  background: #333;
-  border-radius: 10px;
-}
-.portrt:before {
-  top: -30px;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-.lansc:before {
-  top: 50%;
-  left: -60px;
-  transform: rotate(-90deg);
-}
-
-/* The circle on the bottom of the device */
-.smartphone:after {
-  content: "";
-  display: block;
-  width: 35px;
-  height: 35px;
-  position: absolute;
-
-  background: #333;
-  border-radius: 50%;
-}
-.portrt:after {
-  left: 50%;
-  bottom: -65px;
-  transform: translate(-50%, -50%);
-}
-.lansc:after {
-  top: 47%;
-  right: -47px;
-  transform: rotate(-90deg);
-}
-
-/* The screen (or content) of the device */
-.smartphone .content {
-  width: 360px;
-  height: 640px;
-  background: white;
-}
-#iframeContainer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  height: 100vh;
-  background: #a5a5a5;
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  left: 0;
-  flex-direction: column;
-  z-index: 999999;
-  overflow: auto;
-}
-
-.FrameSlider {
-  -webkit-appearance: none;
-  width: 170px !important;
-  height: 15px;
-  border-radius: 5px;
-  background: #d3d3d3;
-  outline: none;
-  opacity: 0.7;
-  margin: 0 5px;
-  -webkit-transition: 0.2s;
-  transition: opacity 0.2s;
-}
-
-.FrameSlider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
-  background: #4caf50;
-  cursor: pointer;
-}
-
-.FrameSlider::-moz-range-thumb {
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
-  background: #4caf50;
-  cursor: pointer;
-}
-#CloseFrame {
-  position: fixed;
-  top: 0;
-  right: 20px;
-  color: #f1d342;
-  font-size: x-large;
-  cursor: pointer;
-}
-#CloseFrame:hover {
-  color: #faea9c;
-}
-#FrameDimControls {
-  background: ghostwhite;
-  width: 70%;
-  margin-bottom: 10px;
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  box-shadow: 0 8px 17px 2px rgba(0, 0, 0, 0.14),
-    0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.2);
-}
-#FrameDimControls > input {
-  margin: 0 5px;
-}
-.ctrlZone {
-  margin: 0 5px;
-  width: 45%;
-  display: flex;
-  justify-content: center;
-}
-.showbuttons {
-  display: flex !important;
-  justify-content: flex-end;
-}
-#shortcutscontainer {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-}
-.buttonsdiv {
-  width: 96%;
-  display: none;
-}
 .popupCUSTOMlook {
   user-select: none;
 }
@@ -2012,6 +660,9 @@ export default {
 }
 </style>
 <style scoped>
+#appMainCont {
+  z-index: 9999999;
+}
 .clickable {
   cursor: pointer;
 }
@@ -2227,8 +878,7 @@ export default {
   position: fixed;
   display: none;
 }
-.deviceItm,
-.deviceItmFrame {
+.deviceItm {
   background: lightblue;
   padding: 5px;
   cursor: pointer;
@@ -2236,12 +886,8 @@ export default {
   border-bottom: solid 1px white;
   border-radius: 5px;
 }
-.deviceItm:hover,
-.deviceItmFrame:hover {
+.deviceItm:hover {
   background: lightseagreen;
-}
-.deviceItmFrame {
-  margin: 0 3px;
 }
 
 .devList {
@@ -2262,6 +908,7 @@ export default {
 .selDevice {
   background: white;
 }
+
 /* mobile look */
 @media only screen and (max-width: 768px) {
   .bntLabel {

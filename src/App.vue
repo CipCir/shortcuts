@@ -175,9 +175,19 @@ export default {
     };
   },
   created() {
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      $("#ESQPreview").after(
+        "<div id='ESQPrevErr'><span id='ESQErrText' class='container'>The selected question can't be previewed.</br>Please use the 'Next page' button and go through the link.</span></div>"
+      );
+    };
     $(function() {
       if (typeof window.DimWrapper === "undefined") {
         window.DimWrapper = $("#wrapper").html();
+      }
+      if (typeof inESQ != "undefined") {
+        $("#navigation-bar").after(
+          "<div id='ESQPreview'><span id='PrevText' class='container'>This is a preview of the question</span></div>"
+        );
       }
     });
   },
@@ -551,6 +561,25 @@ export default {
 };
 </script>
 <style>
+#ESQPreview {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+#PrevText {
+  background: #6572ba;
+  padding: 5px;
+  border-radius: 5px;
+  text-align: center;
+  color: white;
+  margin-bottom: 5px;
+}
+#ESQPrevErr {
+  width: 100%;
+  text-align: center;
+  color: red;
+  font-size: 18px;
+}
 .popupCUSTOMlook {
   user-select: none;
 }

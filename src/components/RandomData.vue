@@ -1,8 +1,8 @@
 <template></template>
 <script>
+import { SSL_OP_SINGLE_DH_USE } from "constants";
 export default {
   name: "RandomData",
-  props: { SubmitPage: Boolean },
   data() {
     return {};
   },
@@ -11,6 +11,8 @@ export default {
   },
   methods: {
     setRandomData() {
+      let qTypeFound = false;
+
       $(".question-container").removeClass("questionReadyForSubmit");
       if ($(".question-container").length > 0) {
         $(".question-container").each(function() {
@@ -23,13 +25,11 @@ export default {
               $(this).find("textarea").length == 0)
           ) {
             //Populate with answers only if not Read-only and if not INFO
-            debugger;
-            $(this).addClass("questionReadyForSubmit");
             //AutoAnswer(".question-container");
           } else {
-            debugger;
             //Single Answer
             if ($(this).hasClass("QType-SA")) {
+              qTypeFound = true;
               if ($(this).hasClass("Slider")) {
                 //Slider
                 $(this)
@@ -200,6 +200,7 @@ export default {
             }
             //SP DropDown
             if ($(this).hasClass("QType-DROPDOWN")) {
+              qTypeFound = true;
               var availableOptions = $(this).find("select option").length;
               var randomOption = Math.floor(Math.random() * availableOptions);
               if (randomOption == 0) {
@@ -216,6 +217,7 @@ export default {
               $(this).hasClass("QType-GRID") &&
               $(this).hasClass("QSubType-DROPDOWN")
             ) {
+              qTypeFound = true;
               var availableOptions = $(this).find("select:first option").length;
               var randomOption = 0;
               $(this)
@@ -234,6 +236,7 @@ export default {
             }
             //Multiple Answers
             if ($(this).hasClass("QType-MA")) {
+              qTypeFound = true;
               if ($(this).hasClass("CategoricalClickImages")) {
                 //MA Click Images
                 $(this)
@@ -441,6 +444,7 @@ export default {
             }
             //OE
             if ($(this).hasClass("QType-OE")) {
+              qTypeFound = true;
               //SLIDER OE
               if ($(this).hasClass("Slider")) {
                 $(this)
@@ -505,6 +509,7 @@ export default {
             }
             //NUMERIC
             if ($(this).hasClass("QType-NUM")) {
+              qTypeFound = true;
               //SLIDER NUMERIC + CLOSENESS
               if ($(this).hasClass("Slider")) {
                 $(this)
@@ -553,6 +558,7 @@ export default {
             }
             //GRID
             if ($(this).hasClass("QType-GRID")) {
+              qTypeFound = true;
               //Sliders
               if (
                 $(this).hasClass("QSubType-NUM") &&
@@ -710,6 +716,7 @@ export default {
             }
             //Grid SA/ROW
             if ($(this).hasClass("QType-GRID QSubType-SA QOrientation-ROW")) {
+              qTypeFound = true;
               $(this)
                 .find(".mrSingle")
                 .prop("checked", false);
@@ -779,6 +786,7 @@ export default {
             }
             //Grid MA/ROW
             if ($(this).hasClass("QType-GRID QSubType-MA QOrientation-ROW")) {
+              qTypeFound = true;
               $(this)
                 .find(".mrMultiple")
                 .prop("checked", false);
@@ -904,6 +912,7 @@ export default {
             }
             //Grid SA/COL
             if ($(this).hasClass("QType-GRID QSubType-SA QOrientation-COL")) {
+              qTypeFound = true;
               $(this)
                 .find(".mrSingle")
                 .prop("checked", false);
@@ -961,6 +970,7 @@ export default {
             }
             //Grid MA/COL
             if ($(this).hasClass("QType-GRID QSubType-MA QOrientation-COL")) {
+              qTypeFound = true;
               $(this)
                 .find(".mrMultiple")
                 .prop("checked", false);
@@ -1080,6 +1090,7 @@ export default {
             }
             //Bubble Ranking
             if ($(this).hasClass("BubbleRanking")) {
+              qTypeFound = true;
               //get the MaxRank
               var parsedJSON = JSON.parse($(".customJSONproperties").text());
               var NoOfRanks = $(".rankingHolder")
@@ -1125,6 +1136,23 @@ export default {
               $(this).addClass("questionReadyForSubmit");
               //AutoAnswer(".question-container");
             }
+            //not found
+            if (!qTypeFound) {
+              //   $(this).addClass("questionReadyForSubmit");
+              $(".invisible").removeClass("invisible");
+              $(".actBtn")
+                .eq(3)
+                .hide();
+              $(".actBtn")
+                .eq(4)
+                .hide();
+
+              //   single
+
+              //   ma
+              //   oe
+              //   dropdown
+            }
           }
         });
       } else if ($(".mrDropdown").length > 0) {
@@ -1140,7 +1168,8 @@ export default {
           $(this).addClass("questionReadyForSubmit");
         });
       }
-      this.$emit("unsetRandomData");
+      //after all
+      this.$emit("unsetRandomData", qTypeFound);
     }
   }
 };

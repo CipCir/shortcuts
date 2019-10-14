@@ -1,8 +1,8 @@
 <template>
   <div id="iframeContainer" @click.self="closeiFrame()">
-    <div id="FrameDimControls">
+    <div id="FrameDimControls" class="Frm_row">
       <div
-        class="deviceItmFrame"
+        class="deviceItmFrame Frm_col"
         v-for="(device,index) in deviceBtns"
         :key="index"
         :class="{'selDevice':device.lbl==SelDeviceBtn.lbl}"
@@ -10,20 +10,20 @@
       >
         <i :class="[device.icon,{'landSk':device.landSc},device.color]"></i>
       </div>
-      <div class="ctrlZone">
-        <span>Width:</span>
+      <div class="ctrlZone Frm_col Frm_row">
+        <span class="Frm_col">Width:</span>
         <input
           type="range"
-          class="FrameSlider"
+          class="FrameSlider Frm_col"
           v-model="iFrame_Width"
           min="400"
           max="1024"
           @change="UpdateDevice()"
         />
-        {{iFrame_Width}}
-        <span class="dimLbl">px</span>
+        <span class="Frm_col">{{iFrame_Width}}</span>
+        <span class="dimLbl Frm_col">px</span>
       </div>
-      <div class="ctrlZone">
+      <div class="ctrlZone Frm_col Frm_row">
         <span>Height:</span>
         <input
           type="range"
@@ -33,11 +33,14 @@
           max="1024"
           @change="UpdateDevice()"
         />
-        {{iFrame_Height}}
-        <span class="dimLbl">px</span>
+        <span class="Frm_col">{{iFrame_Height}}</span>
+        <span class="dimLbl Frm_col">px</span>
       </div>
     </div>
-    <div class="smartphone" :class="SelDeviceBtn.landSc?'lansc':'portrt'">
+    <div id="TxtCont" class="Frm_row">
+      <i class="fas fa-info-circle" style="margin-right:5px"></i>This is a simulation of a device screen, actual layout might vary on a real device.
+    </div>
+    <div class="smartphone Frm_row" :class="SelDeviceBtn.landSc?'lansc':'portrt'">
       <iframe
         :src="iFrameSrc"
         frameborder="0"
@@ -96,10 +99,43 @@ export default {
 };
 </script>
 <style scoped>
+.deviceItmFrame {
+  width: 40px;
+}
+.Frm_row {
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 20px;
+}
+.Frm_row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+/* .Frm_row .Frm_col {
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
+} */
+.Frm_row .Frm_col {
+  float: left;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: 0 0.75rem;
+  min-height: 1px;
+}
+
+#TxtCont {
+  background: white;
+  color: black;
+  padding: 5px;
+  border-radius: 3px;
+  margin-bottom: 5px;
+}
 #iframeContainer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  /* display: flex; */
+  /* align-items: center;
+  justify-content: flex-start; */
+  /* flex-direction: column; */
   height: 100vh;
   background: #a5a5a5;
   position: fixed;
@@ -107,25 +143,24 @@ export default {
   bottom: 0;
   right: 0;
   left: 0;
-  flex-direction: column;
   z-index: 999999;
   overflow: auto;
 }
 
 .FrameSlider {
-  -webkit-appearance: none;
-  width: 170px !important;
-  height: 15px;
-  border-radius: 5px;
-  background: #d3d3d3;
+  /* -webkit-appearance: none; */
+  /* width: 170px !important; */
+  /* height: 15px; */
+  /* border-radius: 5px; */
+  /* background: #d3d3d3;
   outline: none;
   opacity: 0.7;
-  margin: 0 5px;
+  margin: 0 5px; */
   -webkit-transition: 0.2s;
   transition: opacity 0.2s;
 }
 
-.FrameSlider::-webkit-slider-thumb {
+/* .FrameSlider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 25px;
@@ -141,7 +176,7 @@ export default {
   border-radius: 50%;
   background: #4caf50;
   cursor: pointer;
-}
+} */
 #CloseFrame {
   position: fixed;
   top: 0;
@@ -154,13 +189,14 @@ export default {
   color: #faea9c;
 }
 #FrameDimControls {
+  min-width: 637px;
   background: ghostwhite;
   width: 70%;
   margin-bottom: 10px;
   padding: 10px;
-  display: flex;
+  /* display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: center; */
   font-weight: bold;
   box-shadow: 0 8px 17px 2px rgba(0, 0, 0, 0.14),
     0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 5px 5px -3px rgba(0, 0, 0, 0.2);
@@ -170,9 +206,9 @@ export default {
 }
 .ctrlZone {
   margin: 0 5px;
-  width: 45%;
-  display: flex;
-  justify-content: center;
+  width: 30%;
+  /* display: flex;
+  justify-content: center; */
 }
 
 .deviceItmFrame {

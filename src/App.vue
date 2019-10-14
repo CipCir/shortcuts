@@ -16,14 +16,15 @@
             <span class="devList">{{device.lbl}}</span>
           </div>
         </div>
-        <div id="deviceBtn" class="actBtn" @click="openDevices()">
+        <!-- <div id="deviceBtn" class="actBtn" @click="openDevices()">
           <i class="fas fa-chalkboard-teacher"></i>
-          <span class="bntLabel">device</span>
-        </div>
+          <span class="bntLabel">Device Preview</span>
+        </div>-->
         <div
           v-for="(btn,indx) in actionBtns"
           :key="indx"
           class="actBtn"
+          :class="btn.cls"
           @click="DoBtnAction(btn.action)"
         >
           <i :class="btn.icon"></i>
@@ -44,13 +45,13 @@
     />
     <!-- Modal structure -->
     <div v-if="showModal" id="vueModBackCont" @click.self="closeModal()">
-      <div id="vueModMainCont">
+      <div id="vueModMainCont" :class="{'makeSmall':ModalContent==2}">
         <div id="vueModHeader">
           <span class="close-button">
             <i class="fa fa-times-circle float-right" aria-hidden="true" @click="closeModal()"></i>
           </span>
         </div>
-        <div id="vueModContent">
+        <div id="vueModContent" v-if="ModalContent==1">
           <center>
             <div
               id="instr"
@@ -73,8 +74,29 @@
             </div>
           </div>
         </div>
-        <div id="vueModFooter">
+        <div id="vueModFooter" v-if="ModalContent==1">
           <div id="PrevBtn" @click="GotoPreviewQ()">Preview questions</div>
+        </div>
+        <div id="vueModContent" style="padding:2px" v-if="ModalContent==2">
+          <h3>Available functionalities</h3>You can find below a description for each functionality and the assigned keyboard combination:
+          <table id="TblAnswCont">
+            <tr>
+              <th>Icon</th>
+              <th>Description</th>
+              <th>Keboard shortcut</th>
+            </tr>
+            <tr v-for="(elmn,elIndx) in actionBtns" :key="elIndx" class="functRow">
+              <td>
+                <span class="mockActBtn">
+                  <i :class="elmn.icon"></i>
+                </span>
+              </td>
+              <td>{{elmn.desc}}</td>
+              <td>
+                <b>{{elmn.keyb}}</b>
+              </td>
+            </tr>
+          </table>
         </div>
       </div>
     </div>
@@ -82,8 +104,28 @@
     <RandomData
       v-if="LoadRandomData"
       :SubmitPage="ActionSubmit"
-      v-on:unsetRandomData="UnLoadRandomData()"
+      v-on:unsetRandomData="UnLoadRandomData($event)"
     />
+    <!-- Preview MsgContainer -->
+    <div id="PrevMSGContainer" v-if="QinESQ">
+      <div id="ESQPreview">
+        <span id="PrevText" class="container">
+          <i class="far fa-eye"></i>This is a preview of the question
+          <i class="far fa-eye"></i>
+        </span>
+      </div>
+      <div id="ESQPrevErr" v-if="inESQ_errPreview">
+        <span class="container">
+          The selected question can't be previewed.
+          <br />
+          <span
+            v-if="inESQ_errRandom"
+            id="RandomDErr"
+          >Random data didn't work, you need to manually answer the question and submit the page.</span>
+          <span v-else>Please use the '{{actionBtns[3].lbl}}' button and go through the link.</span>
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -105,6 +147,7 @@ export default {
       showDrawer: false,
       showBtns: false,
       showModal: false,
+      ModalContent: 1,
       slideBtnIndx: 0,
       showDevices: false,
       slideBtns: [
@@ -112,11 +155,47 @@ export default {
         '<i class="far fa-caret-square-down"></i>'
       ],
       actionBtns: [
-        // {lbl: "Previous page",icon: "fas fa-step-backward",action: "navPrev"},
-        { lbl: "Question preview", icon: "far fa-eye", action: "preview" },
-        { lbl: "Show/hide precodes", icon: "fas fa-code", action: "codes" },
-        { lbl: "Random data", icon: "fas fa-random", action: "randomData" },
-        { lbl: "Next page", icon: "fas fa-step-forward", action: "navNext" }
+        {
+          lbl: "Device Preview",
+          icon: "fas fa-chalkboard-teacher",
+          action: "openDevices",
+          cls: "hideSmall",
+          desc:
+            "Open question in mobile device simulation (available on Desktop only)",
+          keyb: "Ctrl + "
+        },
+        {
+          lbl: "Question preview",
+          icon: "far fa-eye",
+          action: "preview",
+          cls: "",
+          desc: "Jump to a preview for selected questions",
+          keyb: "Ctrl + G"
+        },
+        {
+          lbl: "Show/hide precodes",
+          icon: "fas fa-code",
+          action: "codes",
+          cls: "",
+          desc: "Show/hide precodes",
+          keyb: "Ctrl + S"
+        },
+        {
+          lbl: "Random data",
+          icon: "fas fa-random",
+          action: "randomData",
+          cls: "",
+          desc: "Set a random answer for the current question",
+          keyb: "Ctrl + R"
+        },
+        {
+          lbl: "Forward",
+          icon: "fas fa-step-forward",
+          action: "navNext",
+          cls: "",
+          desc: "Set a random answer and navigate to next question",
+          keyb: "Ctrl +A"
+        }
       ],
       deviceBtns: [
         {
@@ -171,29 +250,36 @@ export default {
       currQName: null,
       curQIndex: null,
       LoadRandomData: false,
-      ActionSubmit: false
+      ActionSubmit: false,
+      QinESQ: false,
+      inESQ_errPreview: false,
+      inESQ_errRandom: false
     };
   },
   created() {
+    let vueOBJ = this;
     window.onerror = function(msg, url, lineNo, columnNo, error) {
-      $("#ESQPreview").after(
-        "<div id='ESQPrevErr'><span id='ESQErrText' class='container'>The selected question can't be previewed.</br>Please use the 'Next page' button and go through the link.</span></div>"
-      );
+      console.log("err");
+      vueOBJ.QinESQ = typeof inESQ != "undefined";
+      vueOBJ.initializeApp();
+      vueOBJ.inESQ_errPreview = true;
     };
+
     $(function() {
+      console.log("ready");
+      vueOBJ.QinESQ = typeof inESQ != "undefined";
+      vueOBJ.initializeApp();
+    });
+  },
+
+  methods: {
+    initializeApp() {
+      let vueObj = this;
+
       if (typeof window.DimWrapper === "undefined") {
         window.DimWrapper = $("#wrapper").html();
       }
-      if (typeof inESQ != "undefined") {
-        $("#navigation-bar").after(
-          "<div id='ESQPreview'><span id='PrevText' class='container'>This is a preview of the question</span></div>"
-        );
-      }
-    });
-  },
-  mounted() {
-    let vueObj = this;
-    $(function() {
+
       //check if ESQ page
       vueObj.currQName = $("input[name='I.SavePoint']").val();
       console.log("CurrentQ: " + vueObj.currQName);
@@ -220,12 +306,13 @@ export default {
         //run setup for normal pages
         vueObj.runNormalSetup();
       }
-    });
-  },
-  methods: {
-    UnLoadRandomData() {
+    },
+    UnLoadRandomData(qtFound) {
       this.LoadRandomData = false;
-      if (this.ActionSubmit) {
+      if (!qtFound) {
+        this.inESQ_errRandom = true;
+      }
+      if (this.ActionSubmit && qtFound) {
         this.navigate(".mrNext");
       }
     },
@@ -301,13 +388,10 @@ export default {
         vueObj.QSeenArr = JSON.parse(seenQ);
       }
 
-      let inESQq = false;
-      inESQq = this.SelViewQ.indexOf(this.currQName) > -1;
-
       let curQIndex = vueObj.QSeenArr.indexOf(this.currQName);
-      console.log("inESQq:", inESQq);
+      console.log("inESQq:", this.QinESQ);
       console.log("curQIndex:", curQIndex);
-      if (curQIndex == -1 && !inESQq) {
+      if (curQIndex == -1 && !this.QinESQ) {
         //bind events
 
         setTimeout(function() {
@@ -338,7 +422,7 @@ export default {
           // remove from seen
           vueObj.QSeenArr.splice(curQIndex, 1);
           sessionStorage.setItem("ESQ_toSubm", JSON.stringify(vueObj.QSeenArr));
-        } else if (!inESQq) {
+        } else if (!this.QinESQ) {
           submQArr.push(this.currQName);
 
           sessionStorage.setItem("ESQ_submQ", JSON.stringify(submQArr));
@@ -433,33 +517,35 @@ export default {
       this.showModal = false;
     },
     openInfoPopup() {
-      var shortcutsPopupInfo = "<div class='shortcutsPopupInfo'>";
-      shortcutsPopupInfo +=
-        "<b><b>Ctrl</b> + <b>G</b> </b> &#x2192; <b class='iKey'></b>Go to Question Preview<br/>";
-      shortcutsPopupInfo +=
-        "<b><b>Ctrl</b> + <b>S</b> </b> &#x2192; <b class='iKey'></b>Show/hide precodes<br/>";
-      shortcutsPopupInfo +=
-        "<b><b>Ctrl</b> + <b>D</b> </b> &#x2192; <b class='iKey'></b>Next page (page submit)<br/>";
-      shortcutsPopupInfo +=
-        "<b><b>Ctrl</b> + <b>B</b> </b> &#x2192; <b class='iKey'></b>Back - Previous page<br/>";
-      shortcutsPopupInfo +=
-        "<b><b>Ctrl</b> + <b>R</b> </b> &#x2192; <b class='iKey'></b>Random data<br/>";
-      shortcutsPopupInfo +=
-        "<b><b>Ctrl</b> + <b>A</b> </b> &#x2192; <b class='iKey'></b>Auto answer (page submit)<br/>";
-      shortcutsPopupInfo +=
-        "<b><b>Ctrl</b> + <b>Shift</b> + <b>B</b> </b> &#x2192; <b class='iKey'>Show/hide buttons(Only Desktop)<br/>";
-      shortcutsPopupInfo += "</div>";
+      this.ModalContent = 2;
+      this.showModal = true;
+      //   var shortcutsPopupInfo = "<div class='shortcutsPopupInfo'>";
+      //   shortcutsPopupInfo +=
+      //     "<b><b>Ctrl</b> + <b>G</b> </b> &#x2192; <b class='iKey'></b>Go to Question Preview<br/>";
+      //   shortcutsPopupInfo +=
+      //     "<b><b>Ctrl</b> + <b>S</b> </b> &#x2192; <b class='iKey'></b>Show/hide precodes<br/>";
+      //   shortcutsPopupInfo +=
+      //     "<b><b>Ctrl</b> + <b>D</b> </b> &#x2192; <b class='iKey'></b>Next page (page submit)<br/>";
+      //   shortcutsPopupInfo +=
+      //     "<b><b>Ctrl</b> + <b>B</b> </b> &#x2192; <b class='iKey'></b>Back - Previous page<br/>";
+      //   shortcutsPopupInfo +=
+      //     "<b><b>Ctrl</b> + <b>R</b> </b> &#x2192; <b class='iKey'></b>Random data<br/>";
+      //   shortcutsPopupInfo +=
+      //     "<b><b>Ctrl</b> + <b>A</b> </b> &#x2192; <b class='iKey'></b>Auto answer (page submit)<br/>";
+      //   shortcutsPopupInfo +=
+      //     "<b><b>Ctrl</b> + <b>Shift</b> + <b>B</b> </b> &#x2192; <b class='iKey'>Show/hide buttons(Only Desktop)<br/>";
+      //   shortcutsPopupInfo += "</div>";
 
-      var _shortcutsInfoPopup = new OverlayMaster({
-        Message: shortcutsPopupInfo,
-        ModalType: "info",
-        OkButton: "<b>&#x2715;</b>"
-      });
-      $(".shortcutsPopupInfo")
-        .closest(".iisSharky-modalWindow")
-        .addClass("popupCUSTOMlook");
-      $(".modal-body").css("max-height", window.innerHeight - 160 + "px");
-      _shortcutsInfoPopup.show();
+      //   var _shortcutsInfoPopup = new OverlayMaster({
+      //     Message: shortcutsPopupInfo,
+      //     ModalType: "info",
+      //     OkButton: "<b>&#x2715;</b>"
+      //   });
+      //   $(".shortcutsPopupInfo")
+      //     .closest(".iisSharky-modalWindow")
+      //     .addClass("popupCUSTOMlook");
+      //   $(".modal-body").css("max-height", window.innerHeight - 160 + "px");
+      //   shortcutsInfoPopup.show();
     },
     slideClick() {
       this.showDrawer = !this.showDrawer;
@@ -486,12 +572,16 @@ export default {
         case "openInfo":
           this.openInfoPopup();
           break;
+        case "openDevices":
+          this.openDevices();
+          break;
       }
     },
     showHideButtons() {
       this.showBtns = !this.showBtns;
     },
     previewQ() {
+      this.ModalContent = 1;
       this.showModal = true;
     },
     showCodes() {
@@ -561,18 +651,38 @@ export default {
 };
 </script>
 <style>
+@keyframes blink {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
 #ESQPreview {
   width: 100%;
   display: flex;
   justify-content: center;
 }
 #PrevText {
+  z-index: 9999;
   background: #6572ba;
   padding: 5px;
   border-radius: 5px;
   text-align: center;
   color: white;
   margin-bottom: 5px;
+}
+#PrevText > i {
+  color: white;
+  font-size: 18px;
+  margin: 0 5px;
+  font-weight: bold;
+  float: left;
+  transform: rotate(180deg);
 }
 #ESQPrevErr {
   width: 100%;
@@ -689,9 +799,6 @@ export default {
 }
 </style>
 <style scoped>
-#appMainCont {
-  z-index: 9999999;
-}
 .clickable {
   cursor: pointer;
 }
@@ -701,6 +808,7 @@ export default {
   left: 0;
   width: 100vw;
   text-align: center;
+  z-index: 99999;
 }
 #slideBtn {
   background: #3f56af;
@@ -754,6 +862,27 @@ export default {
 .actBtn > i {
   color: #06f3ed;
 }
+.mockActBtn {
+  background: #2e4088;
+  padding: 5px;
+  margin: 5px;
+  border-radius: 5px;
+  border: solid 2px #273363;
+}
+.mockActBtn > i {
+  color: #06f3ed;
+}
+th,
+td {
+  text-align: left;
+  padding: 8px;
+}
+#TblAnswCont {
+  width: 100%;
+}
+#TblAnswCont > tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
 #slideBtn:hover {
   border-top: solid 2px black;
   border-left: solid 2px black;
@@ -779,7 +908,7 @@ export default {
   height: 100%;
   background: rgba(128, 128, 128, 0.7490196078431373);
   position: fixed;
-  z-index: 9999;
+  z-index: 9999999;
   top: 0;
   bottom: 0;
   left: 0;
@@ -797,7 +926,7 @@ export default {
   position: absolute;
   display: flex;
   flex-flow: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin: auto;
   top: 0;
   right: 0;
@@ -822,6 +951,8 @@ export default {
 #QBtnCont {
   display: flex;
   flex-wrap: wrap;
+  overflow: auto;
+  background: lightsteelblue;
 }
 #instr {
   font-size: large;
@@ -834,6 +965,7 @@ export default {
   padding: 5px;
   font-size: large;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   margin-bottom: 5px;
   background: #e4f1f0;
@@ -856,6 +988,11 @@ export default {
 }
 .activeSort {
   color: #167fdb;
+}
+#vueModContent {
+  display: flex;
+  flex-direction: column;
+  height: 88%;
 }
 #vueModFooter {
   display: flex;
@@ -889,10 +1026,11 @@ export default {
   color: white;
 }
 .close-button {
-  display: block;
+  /* display: block;
   width: 40px;
   height: 40px;
-  z-index: 10000;
+  z-index: 10000; */
+  margin-right: 5px;
   cursor: pointer;
 }
 .close-button i {
@@ -937,15 +1075,48 @@ export default {
 .selDevice {
   background: white;
 }
-
+#RandomDErr {
+  animation: blink 1s linear 3;
+}
+.functRow {
+  margin: 10px 0;
+}
+.makeSmall {
+  width: 50vw !important;
+}
 /* mobile look */
 @media only screen and (max-width: 768px) {
+  .makeSmall {
+    width: 90vw !important;
+  }
+  #vueModMainCont {
+    padding: 2px;
+  }
+  #instr {
+    margin: 0px;
+    width: 95%;
+  }
+  #vueModContent {
+    height: 85%;
+  }
   .bntLabel {
     display: none;
   }
-  #deviceBtn,
+  .hideSmall,
   #listCont {
     display: none !important;
+  }
+}
+@media only screen and (max-height: 400px) {
+  #instr {
+    margin: 0px;
+    width: 95%;
+  }
+  #vueModMainCont {
+    padding: 2px;
+  }
+  #vueModContent {
+    height: 75%;
   }
 }
 </style>

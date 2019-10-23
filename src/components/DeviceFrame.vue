@@ -227,7 +227,7 @@ export default {
 
 .deviceItmFrame {
   display: inline;
-  background: lightblue;
+  /* background: lightblue; */
   padding: 5px;
   cursor: pointer;
   text-align: left;
@@ -254,7 +254,7 @@ export default {
   color: #475283;
 }
 .selDevice {
-  background: white;
+  background: #bfeceb;
 }
 /* The device with borders */
 #iFrameDiv {

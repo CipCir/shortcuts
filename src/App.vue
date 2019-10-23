@@ -885,20 +885,20 @@ td {
   background-color: #f2f2f2;
 }
 #slideBtn:hover {
-  border-top: solid 2px black;
-  border-left: solid 2px black;
-  border-right: solid 2px black;
+  border-top: solid 2px #7b91e6;
+  border-left: solid 2px #7b91e6;
+  border-right: solid 2px #7b91e6;
   opacity: 1;
 }
 .actBtn:hover {
-  border: solid 2px black;
+  border: solid 2px #7b91e6;
   opacity: 1;
 }
 .bntLabel {
   margin-left: 3px;
 }
 #helpBtn {
-  align-self: flex-start;
+  /* align-self: flex-start; */
   color: yellow;
   font-size: 20px;
   cursor: pointer;
@@ -1041,13 +1041,15 @@ td {
   color: #666 !important;
 }
 #listCont {
+  background: white;
   bottom: 61px;
   color: black;
   position: fixed;
   display: none;
+  border-radius: 5px;
 }
 .deviceItm {
-  background: lightblue;
+  /* background: lightblue; */
   padding: 5px;
   cursor: pointer;
   text-align: left;
@@ -1074,7 +1076,7 @@ td {
   color: #475283;
 }
 .selDevice {
-  background: white;
+  background: #bfeceb;
 }
 #RandomDErr {
   animation: blink 1s linear 3;

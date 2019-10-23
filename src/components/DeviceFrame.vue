@@ -48,11 +48,18 @@
         </td>
         <td>{{iFrame_scale/10}} px</td>
       </tr>
+      <tr>
+        <td colspan="12" style="text-align:center">
+          <div id="TxtCont" class="Frm_row" style="width:100%">
+            <i class="fas fa-info-circle" style="margin-right:5px"></i>This is a simulation of a device screen, actual layout might vary on a real device.
+          </div>
+        </td>
+      </tr>
     </table>
     <center @click.self="closeiFrame()">
-      <div id="TxtCont" class="Frm_row">
+      <!-- <div id="TxtCont" class="Frm_row">
         <i class="fas fa-info-circle" style="margin-right:5px"></i>This is a simulation of a device screen, actual layout might vary on a real device.
-      </div>
+      </div>-->
 
       <div
         class="smartphone"
@@ -322,11 +329,11 @@ export default {
   width: 150px;
 }
 table {
-  margin: 10px;
   border-spacing: 5px;
   border-collapse: separate;
   background: white;
-  margin: 0 auto;
+  margin: 5px auto;
+  padding: 3px;
 }
 
 td {

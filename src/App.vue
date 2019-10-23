@@ -344,11 +344,13 @@ export default {
     },
     runESQSetup() {
       console.log("ESQ setup");
+      $("body").hide();
 
       //make selections
       if (Array.isArray(this.SelViewQ)) {
         let vueObj = this;
 
+        console.log("isArray");
         // setTimeout(function() {
         window.everythingReady = function() {
           //update previewQ
@@ -436,8 +438,7 @@ export default {
 
       this.activateModule = true;
       let qString = this.getStorage("ESQ_qString");
-      qString =
-        '["T_Q4","T_Q1","T_Q2","SAQwPictureZoom","SAQExpandable","SAQwClickImagesWOB","SAQwVolumeControlwFontSize","SAQwButtons","MACategoricalButtons","OEQwPrePostLabe","GOEQNumericRowColumnSum","SliderQHorizontal","SliderCloseness","SVGSlider"]';
+      //qString ='["T_Q4","T_Q1","T_Q2","SAQwPictureZoom","SAQExpandable","SAQwClickImagesWOB","SAQwVolumeControlwFontSize","SAQwButtons","MACategoricalButtons","OEQwPrePostLabe","GOEQNumericRowColumnSum","SliderQHorizontal","SliderCloseness","SVGSlider"]';
       if (qString) {
         this.ViewQuestions = JSON.parse(qString);
       }

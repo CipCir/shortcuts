@@ -27,7 +27,10 @@
           :class="btn.cls"
           @click="DoBtnAction(btn.action)"
         >
-          <i :class="btn.icon"></i>
+          <span class="icnCont">
+            <i :class="btn.icon"></i>
+          </span>
+
           <span class="bntLabel">{{btn.lbl}}</span>
         </div>
         <div id="helpBtn" @click="DoBtnAction('openInfo')">
@@ -162,7 +165,7 @@ export default {
           cls: "hideSmall",
           desc:
             "Open question in mobile device simulation (available on Desktop only)",
-          keyb: "Ctrl + "
+          keyb: "Ctrl + E"
         },
         {
           lbl: "Question preview",
@@ -170,7 +173,7 @@ export default {
           action: "preview",
           cls: "",
           desc: "Jump to a preview for selected questions",
-          keyb: "Ctrl + G"
+          keyb: "Ctrl + Q"
         },
         {
           lbl: "Show/hide precodes",
@@ -194,7 +197,7 @@ export default {
           action: "navNext",
           cls: "",
           desc: "Set a random answer and navigate to next question",
-          keyb: "Ctrl +A"
+          keyb: "Ctrl + Z"
         }
       ],
       deviceBtns: [
@@ -448,54 +451,64 @@ export default {
       }
       // this.ViewQuestions.sort();
       this.showDrawer = this.getStorage("ESQ_showDrawer") == "true";
-      var isAlt, isCtrl, isSft;
+      var isCtrl; //,isAlt , isSft;
 
       // action on key up
       $(document).keyup(function(e) {
-        if (e.which == 18) {
-          isAlt = false;
-        }
+        // if (e.which == 18) {
+        //   isAlt = false;
+        // }
         if (e.which == 17) {
           isCtrl = false;
         }
-        if (e.which == 16) {
-          isSft = false;
-        }
+        // if (e.which == 16) {
+        //   isSft = false;
+        // }
       });
       $(document).keydown(function(e) {
-        if (e.which == 18) {
-          isAlt = true;
-        }
+        // if (e.which == 18) {
+        //   isAlt = true;
+        // }
         if (e.which == 17) {
           isCtrl = true;
         }
-        if (e.which == 16) {
-          isSft = true;
-        }
+        // if (e.which == 16) {
+        //   isSft = true;
+        // }
+        //[B]hide buttons [Ctrl+Shift+B]
+        // if (e.which == 66 && isSft && isCtrl) {
+        //   e.preventDefault();
+        //   vueObj.showHideButtons();
+        // }
+
         //[S]how precodes [Ctrl+S]
         if (isCtrl && e.which == 83) {
           e.preventDefault();
-          vueObj.showCodes();
+          vueObj.DoBtnAction("codes");
+          // vueObj.showCodes();
         }
+
         //[R]andom data [Ctrl+R]
         if (e.which == 82 && isCtrl) {
           e.preventDefault();
-          vueObj.setRandomData();
+          vueObj.DoBtnAction("randomData");
         }
-        //[B]hide buttons [Ctrl+Shift+B]
-        if (e.which == 66 && isSft && isCtrl) {
+
+        //[Z]next question (page submit) [Ctrl+W]
+        if (e.which == 90 && isCtrl) {
           e.preventDefault();
-          vueObj.showHideButtons();
+          vueObj.DoBtnAction("navNext");
         }
-        //[D]ext question (page submit) [Ctrl+D]
-        if (e.which == 68 && isCtrl) {
+        //[Q]question preview [Ctrl+Q]
+        if (e.which == 81 && isCtrl) {
           e.preventDefault();
-          vueObj.navigate(".mrNext");
+          vueObj.DoBtnAction("preview");
         }
-        //[P]revious question [Ctrl+B]
-        if (e.which == 66 && isCtrl && !isSft) {
+
+        //[E]question preview [Ctrl+E]
+        if (e.which == 69 && isCtrl) {
           e.preventDefault();
-          vueObj.navigate(".mrPrev");
+          vueObj.DoBtnAction("openDevices");
         }
       });
     },
@@ -860,15 +873,18 @@ export default {
   border: solid 2px #273363;
   opacity: 0.7;
 }
-.actBtn > i {
+/* .actBtn > i {
   color: #06f3ed;
-}
+} */
 .mockActBtn {
   background: #2e4088;
   padding: 5px;
   margin: 5px;
   border-radius: 5px;
   border: solid 2px #273363;
+  width: 35px;
+  display: block;
+  text-align: center;
 }
 .mockActBtn > i {
   color: #06f3ed;
@@ -902,6 +918,7 @@ td {
   color: yellow;
   font-size: 20px;
   cursor: pointer;
+  margin-left: 10px;
 }
 
 #vueModBackCont {
@@ -1121,5 +1138,9 @@ td {
   #vueModContent {
     height: 75%;
   }
+}
+.icnCont {
+  color: #06f3ed;
+  padding: 3px;
 }
 </style>

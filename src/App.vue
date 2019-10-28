@@ -113,7 +113,8 @@
     <div id="PrevMSGContainer" v-if="QinESQ">
       <div id="ESQPreview">
         <span id="PrevText" class="container">
-          <i class="far fa-eye"></i>This is a preview of the question
+          <i class="far fa-eye"></i>
+          <b>This is a preview of the question</b>. (Some text insers and images might not be displayed )
           <i class="far fa-eye"></i>
         </span>
       </div>
@@ -298,6 +299,28 @@ export default {
         }
         return false;
       }
+      try {
+        sessionStorage;
+      } catch (err) {
+        console.log("no session storage");
+        vueObj.activateModule = false;
+        if (vueObj.currQName == "skipped_questions") {
+          window.everythingReady = function() {
+            $(".mrNext").click();
+          };
+        }
+        return false;
+      }
+      // if (typeof Storage == "undefined") {
+      //   console.log("no session storage");
+      //   vueObj.activateModule = false;
+      //   if (vueObj.currQName == "skipped_questions") {
+      //     window.everythingReady = function() {
+      //       $(".mrNext").click();
+      //     };
+      //   }
+      //   return false;
+      // }
       let ESQq = sessionStorage.getItem("ESQ_selQ");
       if (ESQq) {
         vueObj.SelViewQ = JSON.parse(ESQq);
@@ -315,7 +338,8 @@ export default {
       if (!qtFound) {
         this.inESQ_errRandom = true;
       }
-      if (this.ActionSubmit && qtFound) {
+      // if (this.ActionSubmit && qtFound) {
+      if (this.ActionSubmit) {
         this.navigate(".mrNext");
       }
     },
@@ -444,6 +468,13 @@ export default {
       //qString ='["T_Q4","T_Q1","T_Q2","SAQwPictureZoom","SAQExpandable","SAQwClickImagesWOB","SAQwVolumeControlwFontSize","SAQwButtons","MACategoricalButtons","OEQwPrePostLabe","GOEQNumericRowColumnSum","SliderQHorizontal","SliderCloseness","SVGSlider"]';
       if (qString) {
         this.ViewQuestions = JSON.parse(qString);
+      } else {
+        this.actionBtns[1].cls = "hide";
+        console.log("ESQ_qString not found");
+      }
+      if ($(".mrGoto").length == 0) {
+        this.actionBtns[1].cls = "hide";
+        console.log("GoTo button not found");
       }
       let SelQstring = sessionStorage.getItem("ESQ_selQ");
       if (SelQstring) {

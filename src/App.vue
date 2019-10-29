@@ -110,7 +110,7 @@
       v-on:unsetRandomData="UnLoadRandomData($event)"
     />
     <!-- Preview MsgContainer -->
-    <div id="PrevMSGContainer" v-if="QinESQ">
+    <div id="PrevMSGContainer" v-if="QinESQ && addPrewTxt">
       <div id="ESQPreview">
         <span id="PrevText" class="container">
           <i class="far fa-eye"></i>
@@ -258,7 +258,8 @@ export default {
       ActionSubmit: false,
       QinESQ: false,
       inESQ_errPreview: false,
-      inESQ_errRandom: false
+      inESQ_errRandom: false,
+      addPrewTxt: true
     };
   },
   created() {
@@ -376,8 +377,9 @@ export default {
       }, 1);
     },
     runESQSetup() {
+      this.addPrewTxt = false;
       console.log("ESQ setup");
-      $("body").hide();
+      $("#wrapper").hide();
 
       //make selections
       if (Array.isArray(this.SelViewQ)) {
@@ -421,14 +423,17 @@ export default {
       if (seenQ) {
         vueObj.QSeenArr = JSON.parse(seenQ);
       }
-
+      //set flag for autosubmit
+      if (this.QinESQ) {
+        sessionStorage.setItem("ESQ_flagAutoSubmit", true);
+      }
       let curQIndex = vueObj.QSeenArr.indexOf(this.currQName);
       console.log("inESQq:", this.QinESQ); // in module preview
       console.log("curQIndex:", curQIndex);
       if (curQIndex == -1 && !this.QinESQ) {
         // normal question not in QSeenArr[]ESQ_toSubm
+        sessionStorage.setItem("ESQ_flagAutoSubmit", false);
         //bind events
-
         setTimeout(function() {
           $(".mrNext").click(function() {
             // $("#mrForm").submit(function() {
@@ -457,13 +462,14 @@ export default {
         let inSubmQ = submQArr.indexOf(this.currQName) > -1;
 
         console.log("allready submited:", inSubmQ);
+        let DoSubmit = JSON.parse(sessionStorage.getItem("ESQ_flagAutoSubmit"));
 
         if (inSubmQ) {
           // remove from seen so that falls in first condition
           console.log("removed q from ESQ_toSubm");
           vueObj.QSeenArr.splice(curQIndex, 1);
           sessionStorage.setItem("ESQ_toSubm", JSON.stringify(vueObj.QSeenArr));
-        } else if (!this.QinESQ) {
+        } else if (!this.QinESQ && DoSubmit) {
           //autosubmit question for skip
           submQArr.push(this.currQName);
 

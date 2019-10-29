@@ -58,7 +58,7 @@
           <center>
             <div
               id="instr"
-            >Please find below a list all available question names, click to select/deselect the questions you wish to preview</div>
+            >Please find below a list of all available question names, click to select/deselect the questions you wish to preview</div>
           </center>
           <div id="CtrlCont">
             Filter questions:
@@ -173,7 +173,8 @@ export default {
           icon: "far fa-eye",
           action: "preview",
           cls: "",
-          desc: "Jump to a preview for selected questions",
+          desc:
+            "Jump to a preview for selected questions (Not available for ASI Connect V8, NewTest products)",
           keyb: "Ctrl + Q"
         },
         {
@@ -270,7 +271,7 @@ export default {
     };
 
     $(function() {
-      console.log("ready");
+      // console.log("ready");
       vueOBJ.QinESQ = typeof inESQ != "undefined";
       vueOBJ.initializeApp();
     });
@@ -285,12 +286,17 @@ export default {
       }
 
       //check if ESQ page
-      vueObj.currQName = $("input[name='I.SavePoint']").val();
-      console.log("CurrentQ: " + vueObj.currQName);
+      vueObj.currQName = $("input[name='I.SavePoint']")
+        .val()
+        .replace("-1", "");
+      console.log(
+        "%cCurrentQ: " + vueObj.currQName,
+        "background: lightblue;color:black"
+      );
 
       // check if module should be activated
       if (sessionStorage == undefined) {
-        console.log("no session storage");
+        console.log("no session storage 1");
         vueObj.activateModule = false;
         if (vueObj.currQName == "skipped_questions") {
           window.everythingReady = function() {
@@ -302,7 +308,7 @@ export default {
       try {
         sessionStorage;
       } catch (err) {
-        console.log("no session storage");
+        console.log("no session storage 2");
         vueObj.activateModule = false;
         if (vueObj.currQName == "skipped_questions") {
           window.everythingReady = function() {
@@ -377,7 +383,7 @@ export default {
       if (Array.isArray(this.SelViewQ)) {
         let vueObj = this;
 
-        console.log("isArray");
+        // console.log("isArray");
         // setTimeout(function() {
         window.everythingReady = function() {
           //update previewQ
@@ -409,31 +415,36 @@ export default {
     runNormalSetup() {
       console.log("normal setup");
       let vueObj = this;
+
       //set seen questions
-
       let seenQ = sessionStorage.getItem("ESQ_toSubm");
-
       if (seenQ) {
         vueObj.QSeenArr = JSON.parse(seenQ);
       }
 
       let curQIndex = vueObj.QSeenArr.indexOf(this.currQName);
-      console.log("inESQq:", this.QinESQ);
+      console.log("inESQq:", this.QinESQ); // in module preview
       console.log("curQIndex:", curQIndex);
       if (curQIndex == -1 && !this.QinESQ) {
+        // normal question not in QSeenArr[]ESQ_toSubm
         //bind events
 
         setTimeout(function() {
           $(".mrNext").click(function() {
-            console.log("clicked");
-            vueObj.QSeenArr.push(vueObj.currQName);
-            sessionStorage.setItem(
-              "ESQ_toSubm",
-              JSON.stringify(vueObj.QSeenArr)
-            );
+            // $("#mrForm").submit(function() {
+            console.log("page submited");
+            //add it in viewed array if not allready
+            if (vueObj.QSeenArr.indexOf(vueObj.currQName) == -1) {
+              vueObj.QSeenArr.push(vueObj.currQName);
+              sessionStorage.setItem(
+                "ESQ_toSubm",
+                JSON.stringify(vueObj.QSeenArr)
+              );
+            }
           });
         }, 300);
       } else {
+        //normal question that should be autosubmited
         let submitedQ = sessionStorage.getItem("ESQ_submQ");
         let submQArr;
 
@@ -445,18 +456,20 @@ export default {
 
         let inSubmQ = submQArr.indexOf(this.currQName) > -1;
 
-        console.log("inSubmQ:", inSubmQ);
+        console.log("allready submited:", inSubmQ);
 
         if (inSubmQ) {
-          // remove from seen
+          // remove from seen so that falls in first condition
+          console.log("removed q from ESQ_toSubm");
           vueObj.QSeenArr.splice(curQIndex, 1);
           sessionStorage.setItem("ESQ_toSubm", JSON.stringify(vueObj.QSeenArr));
         } else if (!this.QinESQ) {
+          //autosubmit question for skip
           submQArr.push(this.currQName);
 
           sessionStorage.setItem("ESQ_submQ", JSON.stringify(submQArr));
           window.everythingReady = function() {
-            console.log("Do submit");
+            console.log("Tring to submit");
             $(".mrNext").click();
           };
           return false;
@@ -946,8 +959,8 @@ td {
 }
 #helpBtn {
   /* align-self: flex-start; */
-  color: yellow;
-  font-size: 20px;
+  color: #ffeb3b;
+  font-size: 25px;
   cursor: pointer;
   margin-left: 10px;
 }

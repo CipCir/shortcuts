@@ -15,7 +15,7 @@ export default {
 
       $(".question-container").removeClass("questionReadyForSubmit");
       if ($(".question-container").length > 0) {
-        $(".question-container").each(function() {
+        $(".question-container").each(function(qIndex) {
           if (
             ($(this).find("input[disabled]").length != 0 ||
               $(this).find("input").length == 0) &&
@@ -450,7 +450,12 @@ export default {
                 $(this)
                   .find(".mrEdit")
                   .val("");
-                var parsedJSON = JSON.parse($(".customJSONproperties").text());
+
+                var parsedJSON = JSON.parse(
+                  $(".customJSONproperties")
+                    .eq(qIndex)
+                    .text()
+                );
                 var sliderMin = 1;
                 var sliderMax = 10;
                 if (
@@ -1092,7 +1097,11 @@ export default {
             if ($(this).hasClass("BubbleRanking")) {
               qTypeFound = true;
               //get the MaxRank
-              var parsedJSON = JSON.parse($(".customJSONproperties").text());
+              var parsedJSON = JSON.parse(
+                $(".customJSONproperties")
+                  .eq(qIndex)
+                  .text()
+              );
               var NoOfRanks = $(".rankingHolder")
                 .parent()
                 .find(".mrEdit")

@@ -36,6 +36,11 @@ See [Configuration Reference](https://cli.vuejs.org/config/).
 
 /applications/SurveyShortcuts/
 
+myDemo:
 https://staging01.ipsosinteractive.com/surveys/?pid=S2019785&id=&idtype=test
 
+NC:
+https://staging01.ipsosinteractive.com/surveys/?pid=S19032175&id=&i.test=1
 
+Google:
+https://staging01.ipsosinteractive.com/surveys/?pid=S19032186&id=&i.test=1

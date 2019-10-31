@@ -56,9 +56,28 @@
         </div>
         <div id="vueModContent" v-if="ModalContent==1">
           <center>
-            <div
-              id="instr"
-            >Please find below a list of all available question names, click to select/deselect the questions you wish to preview</div>
+            <div id="instr">
+              <p id="QprevTitle">
+                <span @click="showPrevTxt=!showPrevTxt" style="margin-left: 5px;" class="clickable">
+                  Question Preview
+                  <i
+                    class="fas"
+                    :class="showPrevTxt?'fa-caret-square-down':'fa-caret-square-up'"
+                  ></i>
+                </span>
+              </p>
+              <span v-if="showPrevTxt">
+                <div id="QprevDesc">
+                  This feature allows for a quick preview of a question without having to go through the project link.
+                  <br />Note that the preview might not reflect the entire setup as it might not consider text inserts, filtering or special modules setup.
+                </div>
+                <p
+                  id="QprevInstr"
+                >You can choose what questions to preview by selecting the options from the below list:</p>
+              </span>
+
+              <!-- Please find below a list of all available question names, click to select/deselect the questions you wish to preview -->
+            </div>
           </center>
           <div id="CtrlCont">
             Filter questions:
@@ -151,6 +170,7 @@ export default {
       showDrawer: false,
       showBtns: false,
       showModal: false,
+      showPrevTxt: true,
       ModalContent: 1,
       slideBtnIndx: 0,
       showDevices: false,
@@ -484,7 +504,8 @@ export default {
 
       this.activateModule = true;
       let qString = this.getStorage("ESQ_qString");
-      //qString ='["T_Q4","T_Q1","T_Q2","SAQwPictureZoom","SAQExpandable","SAQwClickImagesWOB","SAQwVolumeControlwFontSize","SAQwButtons","MACategoricalButtons","OEQwPrePostLabe","GOEQNumericRowColumnSum","SliderQHorizontal","SliderCloseness","SVGSlider"]';
+      qString =
+        '["T_Q4","T_Q1","T_Q2","SAQwPictureZoom","SAQExpandable","SAQwClickImagesWOB","SAQwVolumeControlwFontSize","SAQwButtons","MACategoricalButtons","OEQwPrePostLabe","GOEQNumericRowColumnSum","SliderQHorizontal","SliderCloseness","SVGSlider"]';
       if (qString) {
         this.ViewQuestions = JSON.parse(qString);
       } else {
@@ -1023,12 +1044,35 @@ td {
   background: lightsteelblue;
 }
 #instr {
-  font-size: large;
+  /* font-size: large;
   margin-top: 25px;
   font-weight: bold;
   width: 75%;
-  margin-bottom: 15px;
+  margin-bottom: 15px; */
+  text-align: left;
+  padding: 5px;
 }
+#QprevTitle {
+  font-size: 18px;
+  text-decoration: underline;
+  text-transform: uppercase;
+}
+#QprevDesc {
+  padding: 3px;
+  color: #666666;
+  font-size: 15px;
+  background: #fff3d4;
+  border-color: #f6b73c;
+  padding-left: 25px;
+  border-left-width: 5px;
+  border-left-style: solid;
+  font-family: x-locale-heading-primary, zillaslab, Palatino,
+    "Palatino Linotype", x-locale-heading-secondary, serif;
+}
+#QprevInstr {
+  margin-top: 3px;
+}
+
 #CtrlCont {
   padding: 5px;
   font-size: large;

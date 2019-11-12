@@ -1,7 +1,13 @@
 <template>
   <div id="appMainCont" v-if="activateModule">
     <div id="drawer">
-      <div id="slideBtn" class="clickable" @click="slideClick()" v-html="slideBtns[slideBtnIndx]"></div>
+      <div
+        id="slideBtn"
+        title="Open/Close shortcuts menu"
+        class="clickable"
+        @click="slideClick()"
+        v-html="slideBtns[slideBtnIndx]"
+      ></div>
       <div id="fakeContent" v-if="!showDrawer"></div>
       <div id="drawerContent" :class="showDrawer?'slideUP':'slideDown'">
         <div id="listCont" v-if="showDevices">
@@ -25,15 +31,15 @@
           :key="indx"
           class="actBtn"
           :class="btn.cls"
+          :title="btn.desc + '\n'+btn.keyb"
           @click="DoBtnAction(btn.action)"
         >
           <span class="icnCont">
             <i :class="btn.icon"></i>
           </span>
-
           <span class="bntLabel">{{btn.lbl}}</span>
         </div>
-        <div id="helpBtn" @click="DoBtnAction('openInfo')">
+        <div id="helpBtn" title="Show more info" @click="DoBtnAction('openInfo')">
           <i class="fas fa-info-circle"></i>
         </div>
       </div>
@@ -99,6 +105,7 @@
         <div id="vueModFooter" v-if="ModalContent==1">
           <div id="PrevBtn" @click="GotoPreviewQ()">Preview questions</div>
         </div>
+        <!-- type 2 -->
         <div id="vueModContent" style="padding:2px" v-if="ModalContent==2">
           <h3>Available functionalities</h3>You can find below a description for each functionality and the assigned keyboard combination:
           <table id="TblAnswCont">
@@ -107,7 +114,12 @@
               <th>Description</th>
               <th>Keboard shortcut</th>
             </tr>
-            <tr v-for="(elmn,elIndx) in actionBtns" :key="elIndx" class="functRow">
+            <tr
+              v-for="(elmn,elIndx) in actionBtns"
+              :key="elIndx"
+              class="functRow"
+              :class="elmn.cls"
+            >
               <td>
                 <span class="mockActBtn">
                   <i :class="elmn.icon"></i>
@@ -116,6 +128,28 @@
               <td>{{elmn.desc}}</td>
               <td>
                 <b>{{elmn.keyb}}</b>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <!-- type 3 -->
+        <div id="vueModContent" style="padding:4px" v-if="ModalContent==3">
+          <h3 style="text-align:center">
+            <img
+              src="https://media.ipsosinteractive.com/deploy/templates/iis-sharky-dev/current-unminified/QuestionTemplates/QuickTips/assets/quicktips_small.jpg"
+              style="height:100px"
+              alt
+            />
+          </h3>
+          <table id="TblAnswCont" style="margin:10px 0">
+            <tr v-if="cstmTxt">
+              <td class="STips">
+                <span v-html="cstmTxt"></span>
+              </td>
+            </tr>
+            <tr v-for="(tip,tindx) in QT_texts" :key="tindx">
+              <td class="STips">
+                <span v-html="tip"></span>
               </td>
             </tr>
           </table>
@@ -154,8 +188,10 @@
 
 <script>
 import { debuglog } from "util";
+import axios from "axios";
 import DeviceFrame from "./components/DeviceFrame.vue";
 import RandomData from "./components/RandomData.vue";
+
 export default {
   name: "app",
   components: {
@@ -164,9 +200,21 @@ export default {
   },
   data() {
     return {
+      Log_Valid: false,
+      Log_OBJ: {
+        ShwCodes: 0,
+        RanData: 0,
+        Forward: 0,
+        QPrew: 0,
+        SurvTips: 0,
+        Emulate: 0
+      },
+      Log_recID: null,
+      Log_vers: "1.0",
+      Log_appId: "F38215D3-E932-4EC3-A722-F92FD60576ED",
       activateModule: false,
       addIframe: false,
-
+      showESQ: true,
       showDrawer: false,
       showBtns: false,
       showModal: false,
@@ -182,7 +230,7 @@ export default {
         {
           lbl: "Device Preview",
           icon: "fas fa-chalkboard-teacher",
-          action: "openDevices",
+          action: "Emulate",
           cls: "hideSmall",
           desc:
             "Open question in mobile device simulation (available on Desktop only)",
@@ -191,16 +239,24 @@ export default {
         {
           lbl: "Question preview",
           icon: "far fa-eye",
-          action: "preview",
+          action: "QPrew",
           cls: "",
           desc:
             "Jump to a preview for selected questions (Not available for ASI Connect V8, NewTest products)",
           keyb: "Ctrl + Q"
         },
         {
+          lbl: "Quick tips",
+          icon: "far fa-lightbulb",
+          action: "SurvTips",
+          cls: "hide",
+          desc: "View survey tips",
+          keyb: "Ctrl + X"
+        },
+        {
           lbl: "Show/hide precodes",
           icon: "fas fa-code",
-          action: "codes",
+          action: "ShwCodes",
           cls: "",
           desc: "Show/hide precodes",
           keyb: "Ctrl + S"
@@ -208,7 +264,7 @@ export default {
         {
           lbl: "Random data",
           icon: "fas fa-random",
-          action: "randomData",
+          action: "RanData",
           cls: "",
           desc: "Set a random answer for the current question",
           keyb: "Ctrl + R"
@@ -216,7 +272,7 @@ export default {
         {
           lbl: "Forward",
           icon: "fas fa-step-forward",
-          action: "navNext",
+          action: "Forward",
           cls: "",
           desc: "Set a random answer and navigate to next question",
           keyb: "Ctrl + Z"
@@ -266,39 +322,231 @@ export default {
       ViewQFilter: "",
       QSeenArr: [],
       SelViewQ: [],
-      sortBtns: [
-        { icon: "fa-sort-alpha-up", srt: "asc" },
-        { icon: "fa-sort-alpha-down", srt: "desc" },
-        { icon: "fa-file-export", srt: "file" }
-      ],
       ActiveSort: "file",
       currQName: null,
+      currSID: null,
       curQIndex: null,
       LoadRandomData: false,
       ActionSubmit: false,
       QinESQ: false,
       inESQ_errPreview: false,
       inESQ_errRandom: false,
-      addPrewTxt: true
+      addPrewTxt: true,
+      cstmTxt: null,
+      QT_texts: []
     };
   },
   created() {
     let vueOBJ = this;
-    window.onerror = function(msg, url, lineNo, columnNo, error) {
-      console.log("err");
-      vueOBJ.QinESQ = typeof inESQ != "undefined";
-      vueOBJ.initializeApp();
-      vueOBJ.inESQ_errPreview = true;
-    };
+    $(document).ready(function() {
+      if (typeof sTips_texts != "undefined") {
+        vueOBJ.QT_texts = sTips_texts;
+        vueOBJ.actionBtns[2].cls = "";
+      }
+      if (typeof SHORTCinput != "undefined") {
+        vueOBJ.cstmTxt = SHORTCinput.cstmTxt;
+      }
 
-    $(function() {
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        console.log("err");
+        vueOBJ.QinESQ = typeof inESQ != "undefined";
+        vueOBJ.initializeApp();
+        vueOBJ.inESQ_errPreview = true;
+      };
+
+      // $(function() {
       // console.log("ready");
       vueOBJ.QinESQ = typeof inESQ != "undefined";
       vueOBJ.initializeApp();
+      // });
     });
   },
 
   methods: {
+    InitLogger() {
+      //check if logger available
+      //check if saved in session
+      let ESQ_log = sessionStorage.getItem("ESQ_logger");
+      this.currSID = $("input[name='I.Project']").val();
+      if (sessionStorage.getItem("ESQ_logger") != null) {
+        this.Log_Valid = true;
+      } else {
+        let vueOBJ = this;
+        axios({
+          method: "get",
+          headers: {
+            "Cache-Control": "no-cache",
+            "content-type": "application/json",
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
+          },
+          url:
+            "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/apps/" +
+            vueOBJ.Log_appId
+        })
+          .then(resp => {
+            vueOBJ.Log_Valid = true;
+
+            //check if proj exists
+            axios({
+              method: "get",
+              headers: {
+                "Cache-Control": "no-cache",
+                "content-type": "application/json",
+                Accept:
+                  "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
+              },
+              url:
+                "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/projects/" +
+                vueOBJ.currSID +
+                "/logs"
+              //"?AppId=" +vueOBJ.Log_appId
+            })
+              .then(resp => {
+                console.log("Log-proj found");
+                // if found get appid logs
+                axios({
+                  method: "get",
+                  headers: {
+                    "Cache-Control": "no-cache",
+                    "content-type": "application/json",
+                    Accept:
+                      "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
+                  },
+                  url:
+                    "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/projects/" +
+                    vueOBJ.currSID +
+                    "/logs?AppId=" +
+                    vueOBJ.Log_appId
+                })
+                  .then(resp => {
+                    //if found then update log obj
+                    vueOBJ.Log_OBJ = JSON.parse(resp.data[0].data);
+                    if (resp.data[0].data == "[]") {
+                      axios({
+                        method: "POST",
+                        headers: {
+                          accept: "application/json",
+                          "Content-Type": "application/json"
+                        },
+                        url:
+                          "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/projects/" +
+                          vueOBJ.currSID +
+                          "/logs",
+                        data: {
+                          data: JSON.stringify(vueOBJ.Log_OBJ),
+                          appId: vueOBJ.Log_appId,
+                          platform: document.location.host.replace(
+                            ".ipsosinteractive.com",
+                            ""
+                          )
+                        }
+                      })
+                        .then(resp => {
+                          sessionStorage.setItem("ESQ_logger", 1);
+                        })
+                        .catch(function(error) {
+                          console.log(error);
+                          // create proj logs
+                        });
+                    } else {
+                      sessionStorage.setItem("ESQ_logger", 1);
+                    }
+                  })
+                  .catch(function(error) {
+                    console.log(error);
+                    axios({
+                      method: "POST",
+                      headers: {
+                        accept: "application/json",
+                        "Content-Type": "application/json"
+                      },
+                      url:
+                        "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/projects/" +
+                        vueOBJ.currSID +
+                        "/logs",
+                      data: {
+                        data: JSON.stringify(vueOBJ.Log_OBJ),
+                        appId: vueOBJ.Log_appId,
+                        platform: document.location.host.replace(
+                          ".ipsosinteractive.com",
+                          ""
+                        )
+                      }
+                    })
+                      .then(resp => {
+                        sessionStorage.setItem("ESQ_logger", 1);
+                      })
+                      .catch(function(error) {
+                        console.log(error);
+                        sessionStorage.removeItem("ESQ_logger");
+                        vueOBJ.Log_Valid = false;
+                        // create proj logs
+                      });
+                  });
+              })
+              .catch(function(error) {
+                console.log("Log-proj not found, will be created");
+                // create proj logs
+                axios({
+                  method: "POST",
+                  headers: {
+                    accept: "application/json",
+                    "Content-Type": "application/json"
+                  },
+                  url:
+                    "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/projects/",
+
+                  data: {
+                    id: vueOBJ.currSID
+                  }
+                })
+                  .then(resp => {
+                    //create app logs for proj
+                    axios({
+                      method: "POST",
+                      headers: {
+                        accept: "application/json",
+                        "Content-Type": "application/json"
+                      },
+                      url:
+                        "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/projects/" +
+                        vueOBJ.currSID +
+                        "/logs",
+                      data: {
+                        data: JSON.stringify(vueOBJ.Log_OBJ),
+                        appId: vueOBJ.Log_appId,
+                        platform: document.location.host.replace(
+                          ".ipsosinteractive.com",
+                          ""
+                        )
+                      }
+                    })
+                      .then(resp => {
+                        sessionStorage.setItem("ESQ_logger", 1);
+                      })
+                      .catch(function(error) {
+                        console.log(error);
+                        sessionStorage.removeItem("ESQ_logger");
+                        vueOBJ.Log_Valid = false;
+                        // create proj logs
+                      });
+                  })
+                  .catch(function(error) {
+                    console.log(error);
+                    sessionStorage.removeItem("ESQ_logger");
+                    vueOBJ.Log_Valid = false;
+                    // create proj logs
+                  });
+              });
+          })
+          .catch(function(error) {
+            sessionStorage.removeItem("ESQ_logger");
+            vueOBJ.Log_Valid = false;
+            console.log(error);
+          });
+      }
+    },
     initializeApp() {
       let vueObj = this;
 
@@ -315,17 +563,6 @@ export default {
         "background: lightblue;color:black"
       );
 
-      // check if module should be activated
-      if (sessionStorage == undefined) {
-        console.log("no session storage 1");
-        vueObj.activateModule = false;
-        if (vueObj.currQName == "skipped_questions") {
-          window.everythingReady = function() {
-            $(".mrNext").click();
-          };
-        }
-        return false;
-      }
       try {
         sessionStorage;
       } catch (err) {
@@ -338,21 +575,29 @@ export default {
         }
         return false;
       }
-      // if (typeof Storage == "undefined") {
-      //   console.log("no session storage");
-      //   vueObj.activateModule = false;
-      //   if (vueObj.currQName == "skipped_questions") {
-      //     window.everythingReady = function() {
-      //       $(".mrNext").click();
-      //     };
-      //   }
-      //   return false;
-      // }
+      // check if module should be activated
+      if (sessionStorage == undefined) {
+        console.log("no session storage 1");
+        vueObj.activateModule = false;
+        if (vueObj.currQName == "skipped_questions") {
+          window.everythingReady = function() {
+            $(".mrNext").click();
+          };
+        }
+        return false;
+      }
+      let projSid = $("input[name='I.Project']").val();
+      if (sessionStorage.getItem("ESQ_Proj") != projSid) {
+        sessionStorage.clear();
+        sessionStorage.setItem("ESQ_Proj", projSid);
+        console.log("Cleared seesion");
+      }
+
       let ESQq = sessionStorage.getItem("ESQ_selQ");
       if (ESQq) {
         vueObj.SelViewQ = JSON.parse(ESQq);
       }
-
+      vueObj.InitLogger();
       if (vueObj.currQName == "skipped_questions") {
         vueObj.runESQSetup();
       } else {
@@ -398,8 +643,8 @@ export default {
     },
     runESQSetup() {
       this.addPrewTxt = false;
-      console.log("ESQ setup");
-      $("#wrapper").hide();
+
+      // $("#wrapper").hide();
 
       //make selections
       if (Array.isArray(this.SelViewQ)) {
@@ -411,7 +656,7 @@ export default {
           //update previewQ
           let qString = "",
             qStArr;
-          $(".mrEdit").each(function() {
+          $(".mrEdit", ".mrQuestionTable").each(function() {
             qString += $(this).val() + ",";
           });
 
@@ -504,17 +749,21 @@ export default {
 
       this.activateModule = true;
       let qString = this.getStorage("ESQ_qString");
-      qString =
-        '["T_Q4","T_Q1","T_Q2","SAQwPictureZoom","SAQExpandable","SAQwClickImagesWOB","SAQwVolumeControlwFontSize","SAQwButtons","MACategoricalButtons","OEQwPrePostLabe","GOEQNumericRowColumnSum","SliderQHorizontal","SliderCloseness","SVGSlider"]';
+      // qString =
+      ('["T_Q4","T_Q1","T_Q2","SAQwPictureZoom","SAQExpandable","SAQwClickImagesWOB","SAQwVolumeControlwFontSize","SAQwButtons","MACategoricalButtons","OEQwPrePostLabe","GOEQNumericRowColumnSum","SliderQHorizontal","SliderCloseness","SVGSlider"]');
       if (qString) {
         this.ViewQuestions = JSON.parse(qString);
       } else {
-        this.actionBtns[1].cls = "hide";
+        this.showESQ = false;
         console.log("ESQ_qString not found");
       }
       if ($(".mrGoto").length == 0) {
-        this.actionBtns[1].cls = "hide";
+        this.showESQ = false;
+
         console.log("GoTo button not found");
+      }
+      if (!this.showESQ) {
+        this.actionBtns[1].cls = "hide";
       }
       let SelQstring = sessionStorage.getItem("ESQ_selQ");
       if (SelQstring) {
@@ -543,43 +792,39 @@ export default {
         if (e.which == 17) {
           isCtrl = true;
         }
-        // if (e.which == 16) {
-        //   isSft = true;
-        // }
-        //[B]hide buttons [Ctrl+Shift+B]
-        // if (e.which == 66 && isSft && isCtrl) {
-        //   e.preventDefault();
-        //   vueObj.showHideButtons();
-        // }
 
         //[S]how precodes [Ctrl+S]
         if (isCtrl && e.which == 83) {
           e.preventDefault();
-          vueObj.DoBtnAction("codes");
+          vueObj.DoBtnAction("ShwCodes");
           // vueObj.showCodes();
         }
 
         //[R]andom data [Ctrl+R]
         if (e.which == 82 && isCtrl) {
           e.preventDefault();
-          vueObj.DoBtnAction("randomData");
+          vueObj.DoBtnAction("RanData");
         }
 
         //[Z]next question (page submit) [Ctrl+W]
         if (e.which == 90 && isCtrl) {
           e.preventDefault();
-          vueObj.DoBtnAction("navNext");
+          vueObj.DoBtnAction("Forward");
         }
         //[Q]question preview [Ctrl+Q]
         if (e.which == 81 && isCtrl) {
           e.preventDefault();
-          vueObj.DoBtnAction("preview");
+          vueObj.DoBtnAction("QPrew");
         }
-
+        //[x]survey tips [Ctrl+X]
+        if (e.which == 88 && isCtrl) {
+          e.preventDefault();
+          vueObj.DoBtnAction("SurvTips");
+        }
         //[E]question preview [Ctrl+E]
         if (e.which == 69 && isCtrl) {
           e.preventDefault();
-          vueObj.DoBtnAction("openDevices");
+          vueObj.DoBtnAction("Emulate");
         }
       });
     },
@@ -601,8 +846,8 @@ export default {
     closeModal() {
       this.showModal = false;
     },
-    openInfoPopup() {
-      this.ModalContent = 2;
+    openInfoPopup(typeN) {
+      this.ModalContent = typeN;
       this.showModal = true;
       //   var shortcutsPopupInfo = "<div class='shortcutsPopupInfo'>";
       //   shortcutsPopupInfo +=
@@ -640,27 +885,82 @@ export default {
 
     DoBtnAction(act) {
       this.LoadRandomData = false;
+      if (this.Log_Valid) {
+        this.LogAction(act);
+      }
       switch (act) {
-        case "preview":
+        case "QPrew":
           this.previewQ();
           break;
-        case "codes":
+        case "ShwCodes":
           this.showCodes();
           break;
-        case "randomData":
+        case "RanData":
           this.setRandomData(false);
           break;
-        case "navNext":
+        case "Forward":
           this.setRandomData(true);
           break;
 
         case "openInfo":
-          this.openInfoPopup();
+          this.openInfoPopup(2);
           break;
-        case "openDevices":
+        case "Emulate":
           this.openDevices();
           break;
+        case "SurvTips":
+          this.openInfoPopup(3);
+          break;
       }
+    },
+    LogAction(act) {
+      let vueOBJ = this;
+      //read latest
+      axios({
+        method: "get",
+        headers: {
+          "Cache-Control": "no-cache",
+          "content-type": "application/json",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"
+        },
+        url:
+          "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/projects/" +
+          vueOBJ.currSID +
+          "/logs?AppId=" +
+          vueOBJ.Log_appId
+      })
+        .then(resp => {
+          vueOBJ.Log_recID = resp.data[0].id;
+          vueOBJ.Log_OBJ = JSON.parse(resp.data[0].data);
+          vueOBJ.Log_OBJ[act]++;
+
+          //make update
+          axios({
+            method: "PUT",
+            headers: {
+              accept: "application/json",
+              "Content-Type": "application/json"
+            },
+            url:
+              "https://iisexport.ipsosinteractive.com/IISLoggerAPI/api/projects/" +
+              vueOBJ.currSID +
+              "/logs/" +
+              vueOBJ.Log_recID,
+
+            data: {
+              data: JSON.stringify(vueOBJ.Log_OBJ),
+              appId: vueOBJ.Log_appId,
+              platform: document.location.host.replace(
+                ".ipsosinteractive.com",
+                ""
+              )
+            }
+          });
+        })
+        .catch(function(error) {
+          console.log(error);
+        });
     },
     showHideButtons() {
       this.showBtns = !this.showBtns;
@@ -1236,5 +1536,8 @@ td {
 .icnCont {
   color: #06f3ed;
   padding: 3px;
+}
+.STips {
+  border: solid 1px;
 }
 </style>

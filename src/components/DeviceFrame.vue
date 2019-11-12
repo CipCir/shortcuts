@@ -192,7 +192,8 @@
 
     <!-- </center> -->
     <div id="CloseFrame" @click="closeiFrame()">
-      <i class="far fa-window-close"></i>
+      <!-- <i class="far fa-window-close"></i> -->
+      <i class="fa fa-times-circle"></i>
     </div>
     <div id="MsgInfoContainer" v-if="ShowInfo">
       <table id="MsgInfoText">
@@ -364,14 +365,18 @@ export default {
 
 #CloseFrame {
   position: fixed;
-  top: 0;
-  right: 20px;
-  color: #f1d342;
-  font-size: x-large;
   cursor: pointer;
+  font-size: 30px;
+  right: 15px;
+
+  opacity: 0.7;
+  top: 5px;
+}
+#CloseFrame > .fa {
+  color: #313030 !important;
 }
 #CloseFrame:hover {
-  color: #faea9c;
+  opacity: 1;
 }
 #FrameDimControls {
   text-align: center;
